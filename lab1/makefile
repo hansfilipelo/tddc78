@@ -19,4 +19,4 @@ $(EXEC): $(OBJS)
 	$(CC) $(CCFLAGS) $(INC) -c -o $@ $<
 
 clean:
-	rm -f $(EXEC) $(OBJS) *~ src/*~
+	rm -f $(EXEC) $(OBJS)

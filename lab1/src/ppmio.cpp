@@ -7,7 +7,7 @@ Implementation of PPM image file IO functions.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "ppmio.h"
+#include "ppmio.hpp"
 
 int read_ppm (const char * fname,
 	int * xpix, int * ypix, int * max, char * data) {
