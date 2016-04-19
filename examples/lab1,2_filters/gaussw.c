@@ -13,7 +13,7 @@
 /* Input: n - number of weights to generate              */
 /* Output: weights_out - array of weights. The element [0] */
 /*  should be used for the central pixel, elements [1..n] */
-/*  should be used for the pixels on a distance [1..n]  */  
+/*  should be used for the pixels on a distance [1..n]  */
 void get_gauss_weights(int n, double* weights_out) {
   double x;
   int i;
