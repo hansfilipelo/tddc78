@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 
-void ppm_error(const char *str);
+void ppm_error(char *str);
 
 /* Read a character from a ppm-file. Remove all comments */
 char ppm_readchar(FILE *file);

@@ -1,21 +1,21 @@
-UNAME_S := $(shell uname -s)
 
-CC = mpicxx
-EXEC = exec
-CCFLAGS = -std=c++11
+CC = mpicc
+BLUR_EXEC = blur
+THRES_EXEC = thres
+CCFLAGS = -std=c99
 INC = $(shell mpicc --showme:compile)
 LDFLAGS = $(shell mpicc --showme:link)
 
-SRC_FILES = $(wildcard src/*.cpp)
-H_FILES = $(wildcard src/*.hpp)
-OBJS = $(SRC_FILES:.cpp=.o)
+BLUR_SRC_FILES = $(wildcard src/blur*.c)
+BLUR_SRC_FILES += src/ppm.c src/ppmio.c src/gaussw.c
+BLUR_H_FILES = $(wildcard src/blur*.h) $(wildcard src/ppm*.h)
+BLUR_H_FILES += src/ppm.h src/ppmio.h src/gaussw.h
+BLUR_OBJS = $(BLUR_SRC_FILES:.c=.o)
 
-all: $(EXEC)
+$(BLUR_EXEC): $(BLUR_OBJS)
+	$(CC) $(BLUR_OBJS) $(INC) -o $(BLUR_EXEC) $(LDFLAGS)
 
-$(EXEC): $(OBJS)
-	$(CC) $(OBJS) $(INC) -o $(EXEC) $(LDFLAGS)
-
-%.o: %.cpp %.hpp
+%.o: %.c %.h
 	$(CC) $(CCFLAGS) $(INC) -c -o $@ $<
 
 clean:
