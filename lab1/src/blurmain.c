@@ -53,7 +53,7 @@ int main (int argc, char ** argv) {
 #ifdef _linux_
   clock_gettime(CLOCK_REALTIME, &etime);
 #endif
-  
+
   printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
   1e-9*(etime.tv_nsec  - stime.tv_nsec)) ;
 
