@@ -19,4 +19,4 @@ $(BLUR_EXEC): $(BLUR_OBJS)
 	$(CC) $(CCFLAGS) $(INC) -c -o $@ $<
 
 clean:
-	rm -f $(BLUR_EXEC) $(OBJS)
+	rm -f $(BLUR_EXEC) $(BLUR_OBJS) 
