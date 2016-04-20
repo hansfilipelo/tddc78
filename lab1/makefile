@@ -7,7 +7,7 @@ INC = $(shell mpicc --showme:compile)
 LDFLAGS = $(shell mpicc --showme:link)
 
 BLUR_SRC_FILES = $(wildcard src/blur*.c)
-BLUR_SRC_FILES += src/ppm.c src/ppmio.c src/gaussw.c
+BLUR_SRC_FILES += src/ppm.c src/ppmio.c src/gaussw.c src/timing_mach.c
 BLUR_H_FILES = $(wildcard src/blur*.h) $(wildcard src/ppm*.h)
 BLUR_H_FILES += src/ppm.h src/ppmio.h src/gaussw.h
 BLUR_OBJS = $(BLUR_SRC_FILES:.c=.o)
