@@ -8,12 +8,18 @@
 #include "gaussw.h"
 #include "blur_mpi_data_types.h"
 
+#ifdef __APPLE__
+#include "timing_mach.h"
+#endif
+
 #define MAX_RAD 1000
 
 int main (int argc, char ** argv) {
   int n_tasks, my_rank;
   int radius, colmax;
   double w[MAX_RAD];
+
+  struct timespec stime, etime;
 
   size_data_t size_data;
   unsigned int partitioned_height;
@@ -98,22 +104,18 @@ int main (int argc, char ** argv) {
 
   printf("Calling filter\n");
 
-  #ifdef _linux_
   clock_gettime(CLOCK_REALTIME, &stime); // TODO: Mac
-  #endif
 
   blurfilter(size_data.width, send_counts[my_rank], src, radius, w); // TODO: Just my part
 
   MPI_Gatherv(src, send_counts[my_rank], mpi_pixel, src, send_counts, displacements, mpi_pixel, 0, com);
 
-  #ifdef _linux_
   clock_gettime(CLOCK_REALTIME, &etime); // TODO: Mac
 
 
   // TODO: Time only for rank 0 from scatter to gather
   printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
   1e-9*(etime.tv_nsec  - stime.tv_nsec)) ;
-  #endif
 
   /* write result */
   printf("Writing output file\n");
