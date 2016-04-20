@@ -54,6 +54,10 @@ int main (int argc, char ** argv) {
     printf("Has read the image, generating coefficients\n");
   }
 
+  // TODO: Create types
+
+  // TODO: Broadcast width and heigth
+
   // TODO: Scatter pixels
 
   /* Calculate gaussian weights */
