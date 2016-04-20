@@ -6,6 +6,7 @@
 #include "ppmio.h"
 #include "blurfilter.h"
 #include "gaussw.h"
+#include "blur_mpi_data_types.h"
 
 #define MAX_RAD 1000
 
@@ -13,7 +14,7 @@ int main (int argc, char ** argv) {
   int n_tasks, my_rank;
   int radius, xsize, ysize, colmax;
   double w[MAX_RAD];
-  pixel* src;
+  pixel_t* src;
 
   /* MPI initilization */
   MPI_Comm com = MPI_COMM_WORLD;
@@ -39,7 +40,7 @@ int main (int argc, char ** argv) {
   /* If my rank is zero read input image */
   if(my_rank == 0)
   {
-    src = malloc(sizeof(pixel) * MAX_PIXELS);
+    src = malloc(sizeof(pixel_t) * MAX_PIXELS);
     struct timespec stime, etime; // TODO: Mac
 
     /* read file */
