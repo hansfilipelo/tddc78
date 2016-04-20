@@ -1,7 +1,7 @@
 #include "blur_mpi_data_types.h"
 
 // Create mpi size data type
-void create_mpi_size_data(size_data_t* size_data, MPI_Datatype* mpi_size_data)
+void create_mpi_size_data(const size_data_t* size_data, MPI_Datatype* mpi_size_data)
 {
   int block_lengths [] = { 1, 1 }; // Lengths of type elements
   MPI_Datatype block_types [] =
@@ -23,7 +23,7 @@ void create_mpi_size_data(size_data_t* size_data, MPI_Datatype* mpi_size_data)
 }
 
 // Create mpi pixel data type
-void create_mpi_pixel(pixel_t* pixel, MPI_Datatype* mpi_pixel)
+void create_mpi_pixel(const pixel_t* pixel, MPI_Datatype* mpi_pixel)
 {
   int block_lengths [] = { 1, 1, 1 }; // Lengths of type elements
   MPI_Datatype block_types [] =

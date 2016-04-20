@@ -16,7 +16,7 @@
    Returns: 0 on success.
  */
 int read_ppm (const char * fname,
-	       int * xpix, int * ypix, int * max, char * data);
+	       unsigned int * xpix, unsigned int * ypix, int * max, char * data);
 
 /* Function: write_ppm - write out an image file in PPM format.
    Input:
@@ -25,6 +25,6 @@ int read_ppm (const char * fname,
       data - color data.
    Returns: 0 on success.
  */
-int write_ppm (const char * fname, int xpix, int ypix, char * data);
+int write_ppm (const char * fname, unsigned int xpix, unsigned int ypix, char * data);
 
 #endif

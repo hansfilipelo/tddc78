@@ -27,7 +27,7 @@ void blurfilter(const int xsize, const int ysize, pixel_t* src, const int radius
   pixel_t dst[MAX_PIXELS];
 
 
-  for (y=0; y<ysize; y++) {
+  for (y=0; y<ysize+radius; y++) {
     for (x=0; x<xsize; x++) {
       r = w[0] * pix(src, x, y, xsize)->r;
       g = w[0] * pix(src, x, y, xsize)->g;

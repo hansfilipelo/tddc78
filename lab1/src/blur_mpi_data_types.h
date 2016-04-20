@@ -13,8 +13,8 @@ typedef struct {
   unsigned char b;
 } pixel_t;
 
-void create_mpi_size_data(size_data_t* size_data, MPI_Datatype* mpi_size_data);
+void create_mpi_size_data(const size_data_t* size_data, MPI_Datatype* mpi_size_data);
 
-void create_mpi_pixel(pixel_t* pixel, MPI_Datatype* mpi_pixel);
+void create_mpi_pixel(const pixel_t* pixel, MPI_Datatype* mpi_pixel);
 
 #endif // _BLUR_MPI_DATA_TYPES_H_

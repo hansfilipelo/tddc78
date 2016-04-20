@@ -10,7 +10,7 @@ Implementation of PPM image file IO functions.
 #include "ppmio.h"
 
 int read_ppm (const char * fname,
-	int * xpix, int * ypix, int * max, char * data) {
+	unsigned int * xpix, unsigned int * ypix, int * max, char * data) {
 		char ftype[40];
 		char ctype[40] = "P6";
 		char line[80];
@@ -59,7 +59,7 @@ int read_ppm (const char * fname,
 	}
 
 
-	int write_ppm (const char * fname, int xpix, int ypix, char * data) {
+	int write_ppm (const char * fname, unsigned int xpix, unsigned int ypix, char * data) {
 
 		FILE * fp;
 		int errno = 0;

@@ -12,8 +12,12 @@
 
 int main (int argc, char ** argv) {
   int n_tasks, my_rank;
-  int radius, xsize, ysize, colmax;
+  int radius, colmax;
   double w[MAX_RAD];
+
+  size_data_t size_data;
+  unsigned int partitioned_height;
+  unsigned int remainder_height;
   pixel_t* src;
 
   /* MPI initilization */
@@ -44,8 +48,9 @@ int main (int argc, char ** argv) {
     struct timespec stime, etime; // TODO: Mac
 
     /* read file */
-    if(read_ppm (argv[2], &xsize, &ysize, &colmax, (char *) src) != 0)
+    if(read_ppm (argv[2], &size_data.width, &size_data.height, &colmax, (char *) src) != 0) {
       exit(1); // TODO: Broadcast exit
+    }
 
     if (colmax > 255) {
       fprintf(stderr, "Too large maximum color-component value\n");
@@ -55,11 +60,38 @@ int main (int argc, char ** argv) {
     printf("Has read the image, generating coefficients\n");
   }
 
-  // TODO: Create types
+  // Create data types for MPI
+  MPI_Datatype mpi_size_data;
+  MPI_Datatype mpi_pixel;
+  pixel_t dummy_pixel;
+  create_mpi_size_data(&size_data, &mpi_size_data);
+  create_mpi_pixel(&dummy_pixel, &mpi_pixel);
 
-  // TODO: Broadcast width and heigth
+  // Broadcast width and heigth
+  MPI_Bcast(&size_data, 1, mpi_size_data, 0, com);
 
-  // TODO: Scatter pixels
+  // Calculate some sweet height values
+  partitioned_height = size_data.height/n_tasks;
+  remainder_height = size_data.height-(n_tasks*partitioned_height);
+
+  // Now we need to partition the task correctly for MPI_scatterv
+  int send_counts[n_tasks];
+  int displacements[n_tasks];
+
+  // Since the ranks needs different amounts of data, we need to specify for
+  // MPI_Scatterv (<-- "v") which addresses each rank need to read from
+  displacements[0] = 0;
+  send_counts[0] = partitioned_height+radius;
+
+  for (size_t i = 1; i < n_tasks-1; i++) {
+    send_counts[i] = 2*radius+partitioned_height;
+    displacements[i] = partitioned_height*i-radius-1;
+  }
+  send_counts[n_tasks-1] = radius+partitioned_height+remainder_height;
+  displacements[n_tasks-1] = partitioned_height*(n_tasks-1)-radius-1;
+
+  // Scatter data to different processes
+  MPI_Scatterv(src, send_counts, displacements, mpi_pixel, src, send_counts[my_rank], mpi_pixel, 0, com);
 
   /* Calculate gaussian weights */
   get_gauss_weights(radius, w);
@@ -70,12 +102,13 @@ int main (int argc, char ** argv) {
   clock_gettime(CLOCK_REALTIME, &stime); // TODO: Mac
   #endif
 
-  blurfilter(xsize, ysize, src, radius, w); // TODO: Just my part
+  blurfilter(size_data.width, send_counts[my_rank], src, radius, w); // TODO: Just my part
+
+  MPI_Gatherv(src, send_counts[my_rank], mpi_pixel, src, send_counts, displacements, mpi_pixel, 0, com);
 
   #ifdef _linux_
   clock_gettime(CLOCK_REALTIME, &etime); // TODO: Mac
 
-  // TODO: Gather pixels
 
   // TODO: Time only for rank 0 from scatter to gather
   printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
@@ -86,9 +119,11 @@ int main (int argc, char ** argv) {
   printf("Writing output file\n");
 
   // TODO: Just rank 0
-  if(write_ppm (argv[3], xsize, ysize, (char *)src) != 0)
-  exit(1);
-
+  if (my_rank == 0){
+    if(write_ppm (argv[3], size_data.width, size_data.height, (char *)src) != 0){
+      exit(1);
+    }
+  }
 
   return(0);
 }
