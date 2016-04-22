@@ -96,36 +96,35 @@ int main (int argc, char ** argv) {
   send_counts[n_tasks-1] = radius+partitioned_height+remainder_height;
   displacements[n_tasks-1] = partitioned_height*(n_tasks-1)-radius-1;
 
-  // Scatter data to different processes
-  MPI_Scatterv(src, send_counts, displacements, mpi_pixel, src, send_counts[my_rank], mpi_pixel, 0, com);
-
   /* Calculate gaussian weights */
   get_gauss_weights(radius, w);
 
-  printf("Calling filter\n");
+  if(my_rank == 0) {
+    printf("Scatter picture to filter it\n");
+    clock_gettime(CLOCK_REALTIME, &stime);
+  }
 
-  clock_gettime(CLOCK_REALTIME, &stime); // TODO: Mac
+  // Scatter data to different processes
+  MPI_Scatterv(src, send_counts, displacements, mpi_pixel, src, send_counts[my_rank], mpi_pixel, 0, com);
 
-  blurfilter(size_data.width, send_counts[my_rank], src, radius, w); // TODO: Just my part
+  blurfilter(size_data.width, send_counts[my_rank], src, radius, w, my_rank, n_tasks); // TODO: Just my part
 
   MPI_Gatherv(src, send_counts[my_rank], mpi_pixel, src, send_counts, displacements, mpi_pixel, 0, com);
 
-  clock_gettime(CLOCK_REALTIME, &etime); // TODO: Mac
+  if(my_rank == 0) {
+    clock_gettime(CLOCK_REALTIME, &etime);
+    printf("Gather picture after filtering\n");
 
+    printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
+    1e-9*(etime.tv_nsec  - stime.tv_nsec)) ;
 
-  // TODO: Time only for rank 0 from scatter to gather
-  printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
-  1e-9*(etime.tv_nsec  - stime.tv_nsec)) ;
+    /* write result */
+    printf("Writing output file\n");
 
-  /* write result */
-  printf("Writing output file\n");
-
-  // TODO: Just rank 0
-  if (my_rank == 0){
     if(write_ppm (argv[3], size_data.width, size_data.height, (char *)src) != 0){
       exit(1);
     }
   }
-
+  
   return(0);
 }
