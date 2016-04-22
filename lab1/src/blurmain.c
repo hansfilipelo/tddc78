@@ -81,20 +81,37 @@ int main (int argc, char ** argv) {
   remainder_height = size_data.height-(n_tasks*partitioned_height);
 
   // Now we need to partition the task correctly for MPI_scatterv
-  int send_counts[n_tasks];
+  int send_count[n_tasks];
+  int receive_count[n_tasks];
   int displacements[n_tasks];
+  int receive_displacements[n_tasks];
 
   // Since the ranks needs different amounts of data, we need to specify for
   // MPI_Scatterv (<-- "v") which addresses each rank need to read from
+  send_count[0] = (partitioned_height + radius)*size_data.width;
   displacements[0] = 0;
-  send_counts[0] = partitioned_height+radius;
+  receive_count[0] = partitioned_height*size_data.width;
 
   for (size_t i = 1; i < n_tasks-1; i++) {
-    send_counts[i] = 2*radius+partitioned_height;
-    displacements[i] = partitioned_height*i-radius-1;
+    send_count[i] = (2*radius + partitioned_height)*size_data.width;
+    receive_count[i] = partitioned_height*size_data.width;
+    displacements[i] = (partitioned_height*i-radius)*size_data.width - 1;
+    receive_displacements[i] = (partitioned_height*i)*size_data.width - 1;
   }
-  send_counts[n_tasks-1] = radius+partitioned_height+remainder_height;
-  displacements[n_tasks-1] = partitioned_height*(n_tasks-1)-radius-1;
+  send_count[n_tasks-1] = (radius + partitioned_height + remainder_height)*size_data.width;
+  receive_count[n_tasks-1] = (partitioned_height+remainder_height)*size_data.width;
+  displacements[n_tasks-1] = (partitioned_height*(n_tasks-1)-radius)*size_data.width - 1;
+  receive_displacements[n_tasks-1] = (partitioned_height*(n_tasks-1))*size_data.width - 1;
+
+
+  if(my_rank != 0) {
+      src = malloc(sizeof(pixel_t) * send_count[my_rank]);
+  }
+  // TEST TEST TEST
+  if(my_rank == 0) {
+    printf("partitioned_height = %i, remainder_height = %i \n", partitioned_height, remainder_height);
+    printf("Width = %i, height = %i, send_count(my_rank) = %i, displacements(my_rank) = %i \n", size_data.width, size_data.height, send_count[my_rank], displacements[my_rank]);
+  }
 
   /* Calculate gaussian weights */
   get_gauss_weights(radius, w);
@@ -105,11 +122,11 @@ int main (int argc, char ** argv) {
   }
 
   // Scatter data to different processes
-  MPI_Scatterv(src, send_counts, displacements, mpi_pixel, src, send_counts[my_rank], mpi_pixel, 0, com);
+  MPI_Scatterv(src, send_count, displacements, mpi_pixel, src, send_count[my_rank], mpi_pixel, 0, com);
 
-  blurfilter(size_data.width, send_counts[my_rank], src, radius, w, my_rank, n_tasks); // TODO: Just my part
+  blurfilter(size_data.width, send_count[my_rank]/size_data.width, src, radius, w, my_rank, n_tasks);
 
-  MPI_Gatherv(src, send_counts[my_rank], mpi_pixel, src, send_counts, displacements, mpi_pixel, 0, com);
+  MPI_Gatherv(src, receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
@@ -125,6 +142,7 @@ int main (int argc, char ** argv) {
       exit(1);
     }
   }
-  
+
+  MPI_Finalize();
   return(0);
 }
