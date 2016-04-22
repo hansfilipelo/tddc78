@@ -34,9 +34,6 @@ void blurfilter(const int xsize, const int ysize, pixel_t* src, const int radius
 
     for (y=y_start; y<y_stop; y++) {
       for (x=x_start; x<x_stop; x++) {
-        if(my_rank == 0) {
-          printf("x = %i, y = %i\n", x, y);
-        }
         r = w[0] * pix(src, x, y, xsize)->r;
         g = w[0] * pix(src, x, y, xsize)->g;
         b = w[0] * pix(src, x, y, xsize)->b;

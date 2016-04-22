@@ -18,6 +18,7 @@ int main (int argc, char ** argv) {
   int n_tasks, my_rank;
   int radius, colmax;
   double w[MAX_RAD];
+  int offset;
 
   struct timespec stime, etime;
 
@@ -91,6 +92,7 @@ int main (int argc, char ** argv) {
   send_count[0] = (partitioned_height + radius)*size_data.width;
   displacements[0] = 0;
   receive_count[0] = partitioned_height*size_data.width;
+  receive_displacements[0] = 0;
 
   for (size_t i = 1; i < n_tasks-1; i++) {
     send_count[i] = (2*radius + partitioned_height)*size_data.width;
@@ -126,7 +128,14 @@ int main (int argc, char ** argv) {
 
   blurfilter(size_data.width, send_count[my_rank]/size_data.width, src, radius, w, my_rank, n_tasks);
 
-  MPI_Gatherv(src, receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
+  if (my_rank != 0) {
+    offset = radius; // Ugly hack as fuck
+  }
+  else {
+    offset = 0;
+  }
+
+  MPI_Gatherv(&src[offset*size_data.width], receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
