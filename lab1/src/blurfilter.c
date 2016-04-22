@@ -27,7 +27,7 @@ void blurfilter(const int xsize, const int ysize, pixel_t* src, const int radius
   {
     int x,y,x2,y2, wi;
     double r,g,b,n, wc;
-    pixel_t* dst = malloc(sizeof(pixel_t)*MAX_PIXELS);
+    pixel_t* dst = malloc(sizeof(pixel_t)*xsize*ysize);
 
     // Set start and stop values
     int y_start = 0, y_stop = ysize;
