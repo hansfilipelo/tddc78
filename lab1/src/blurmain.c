@@ -15,7 +15,7 @@
 int main (int argc, char ** argv) {
   int n_tasks, my_rank;
   int radius, colmax;
-  double w[MAX_RAD];
+  double* w = malloc(sizeof(double)*MAX_RAD);
   int offset;
 
   struct timespec stime, etime;

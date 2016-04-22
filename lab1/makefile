@@ -2,7 +2,7 @@
 CC = mpicc
 BLUR_EXEC = blur
 THRES_EXEC = thres
-CCFLAGS = -std=c99 -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD
+CCFLAGS = -std=c99 -DMAX_RAD=1000 -DMAX_PIXELS=1000*1000
 INC = $(shell mpicc --showme:compile)
 LDFLAGS = $(shell mpicc --showme:link)
 
