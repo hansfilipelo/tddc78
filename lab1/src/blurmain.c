@@ -12,8 +12,6 @@
 #include "timing_mach.h"
 #endif
 
-#define MAX_RAD 1000
-
 int main (int argc, char ** argv) {
   int n_tasks, my_rank;
   int radius, colmax;
