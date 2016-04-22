@@ -15,7 +15,6 @@
 int main (int argc, char ** argv) {
   int n_tasks, my_rank;
   int radius, colmax;
-  double* w = malloc(sizeof(double)*MAX_RAD);
   int offset;
 
   struct timespec stime, etime;
@@ -45,6 +44,8 @@ int main (int argc, char ** argv) {
     }
     exit(1);
   }
+
+  double* w = malloc(sizeof(double)*radius);
 
   /* If my rank is zero read input image */
   if(my_rank == 0)
