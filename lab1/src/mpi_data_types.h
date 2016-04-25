@@ -1,6 +1,6 @@
 #include <mpi.h>
-#ifndef _BLUR_MPI_DATA_TYPES_H_
-#define _BLUR_MPI_DATA_TYPES_H_
+#ifndef _MPI_DATA_TYPES_H_
+#define _MPI_DATA_TYPES_H_
 
 typedef struct {
   unsigned int width;
@@ -17,4 +17,4 @@ void create_mpi_size_data(const size_data_t* size_data, MPI_Datatype* mpi_size_d
 
 void create_mpi_pixel(const pixel_t* pixel, MPI_Datatype* mpi_pixel);
 
-#endif // _BLUR_MPI_DATA_TYPES_H_
+#endif // _MPI_DATA_TYPES_H_

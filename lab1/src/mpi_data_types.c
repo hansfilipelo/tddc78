@@ -1,4 +1,4 @@
-#include "blur_mpi_data_types.h"
+#include "mpi_data_types.h"
 
 // Create mpi size data type
 void create_mpi_size_data(const size_data_t* size_data, MPI_Datatype* mpi_size_data)

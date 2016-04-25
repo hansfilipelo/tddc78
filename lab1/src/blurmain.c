@@ -6,7 +6,7 @@
 #include "ppmio.h"
 #include "blurfilter.h"
 #include "gaussw.h"
-#include "blur_mpi_data_types.h"
+#include "mpi_data_types.h"
 
 #ifdef __APPLE__
 #include "timing_mach.h"
