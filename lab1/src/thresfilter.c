@@ -3,14 +3,19 @@
 
 double calculate_partitioned_mean(const int nr_pixels, const pixel_t* src)
 {
-  unsigned int sum, i;
+  unsigned int sum = 0;
+  unsigned int i;
   double npix = (double)nr_pixels;
 
   for(i = 0, sum = 0; i < nr_pixels; i++) {
     sum += (uint)src[i].r + (uint)src[i].g + (uint)src[i].b;
   }
 
-  return sum / npix;
+  if (nr_pixels != 0) {
+    return sum / npix;
+  }
+
+  return 0;
 }
 
 // ---------

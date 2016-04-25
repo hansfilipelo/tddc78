@@ -91,6 +91,7 @@ int main (int argc, char ** argv) {
 
   if(my_rank == 0)
   {
+    all_partitioned_means[0] = partitioned_mean;
     all_partitioned_means[n_tasks] = calculate_partitioned_mean(remainder_pixels, &src[total_pixels - remainder_pixels]);
     total_mean = calculate_total_mean(all_partitioned_means, n_tasks+1, partitioned_pixels, remainder_pixels, total_pixels);
   }

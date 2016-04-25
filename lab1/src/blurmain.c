@@ -51,7 +51,6 @@ int main (int argc, char ** argv) {
   if(my_rank == 0)
   {
     src = malloc(sizeof(pixel_t) * MAX_PIXELS);
-    struct timespec stime, etime; // TODO: Mac
 
     /* read file */
     if(read_ppm (argv[2], &size_data.width, &size_data.height, &colmax, (char *) src) != 0) {
