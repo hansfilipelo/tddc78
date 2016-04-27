@@ -7,16 +7,22 @@ CCFLAGS = --std=gnu99 -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD
 INC = 
 LDFLAGS = -lm
 
-ifeq ($(UNAME), Darwin)
-	INC += $(shell mpicc --showme:compile)
-	LDFLAGS += $(shell mpicc --showme:link)
-endif
-
 COMMON_FILES= src/mpi_data_types.c src/ppm.c src/ppmio.c
 COMMON_H_FILES=src/ppm.h src/ppmio.h
 
+# Mac specific ----------- 
+
+ifeq ($(UNAME), Darwin)
+	INC += $(shell mpicc --showme:compile)
+	LDFLAGS += $(shell mpicc --showme:link)
+	COMMON_FILES += src/timing_mach.c
+	COMMON_H_FILES += src/timing_mach.h
+endif
+
+# End Mac specific ------
+
 BLUR_SRC_FILES = $(wildcard src/blur*.c) $(COMMON_FILES)
-BLUR_SRC_FILES += src/gaussw.c src/timing_mach.c
+BLUR_SRC_FILES += src/gaussw.c
 BLUR_H_FILES = $(wildcard src/blur*.h) $(wildcard src/ppm*.h) src/gaussw.h $(COMMON_H_FILES)
 BLUR_OBJS = $(BLUR_SRC_FILES:.c=.o)
 
