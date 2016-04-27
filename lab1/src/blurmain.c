@@ -96,8 +96,9 @@ int main (int argc, char ** argv) {
   displacements[0] = 0;
   receive_count[0] = partitioned_height*size_data.width;
   receive_displacements[0] = 0;
-
-  for (size_t i = 1; i < n_tasks-1; i++) {
+  
+  int i = 0;
+  for (i = 1; i < n_tasks-1; i++) {
     send_count[i] = (2*radius + partitioned_height)*size_data.width;
     receive_count[i] = partitioned_height*size_data.width;
     displacements[i] = (partitioned_height*i-radius)*size_data.width - 1;
