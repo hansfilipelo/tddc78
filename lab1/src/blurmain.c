@@ -127,7 +127,12 @@ int main (int argc, char ** argv) {
   }
 
   // Scatter data to different processes
-  MPI_Scatterv(src, send_count, displacements, mpi_pixel, src, send_count[my_rank], mpi_pixel, 0, com);
+  if (my_rank == 0) {
+    MPI_Scatterv(src, send_count, displacements, mpi_pixel, MPI_IN_PLACE, send_count[my_rank], mpi_pixel, 0, com);
+  }
+  else{
+    MPI_Scatterv(src, send_count, displacements, mpi_pixel, src, send_count[my_rank], mpi_pixel, 0, com);
+  }
 
   blurfilter(size_data.width, send_count[my_rank]/size_data.width, src, radius, w, my_rank, n_tasks);
 
@@ -138,7 +143,7 @@ int main (int argc, char ** argv) {
     offset = 0;
   }
 
-  MPI_Gatherv(&src[offset*size_data.width], receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
+  MPI_Gatherv(MPI_IN_PLACE, receive_count[my_rank], mpi_pixel, &src[offset*size_data.width], receive_count, receive_displacements, mpi_pixel, 0, com);
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
