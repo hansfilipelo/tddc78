@@ -143,7 +143,12 @@ int main (int argc, char ** argv) {
     offset = 0;
   }
 
-  MPI_Gatherv(MPI_IN_PLACE, receive_count[my_rank], mpi_pixel, &src[offset*size_data.width], receive_count, receive_displacements, mpi_pixel, 0, com);
+  if (my_rank == 0) {
+    MPI_Gatherv(MPI_IN_PLACE, receive_count[my_rank], mpi_pixel, &src[offset*size_data.width], receive_count, receive_displacements, mpi_pixel, 0, com);
+  }
+  else {
+    MPI_Gatherv(src, receive_count[my_rank], mpi_pixel, &src[offset*size_data.width], receive_count, receive_displacements, mpi_pixel, 0, com);
+  }
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
