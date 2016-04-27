@@ -114,7 +114,7 @@ int main (int argc, char ** argv) {
     thresfilter(remainder_pixels, total_mean, &src[total_pixels-remainder_pixels]);
   }
 
-  MPI_Gather(MPI_IN_PLACE, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  MPI_Gather(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
