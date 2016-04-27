@@ -9,7 +9,12 @@
 #include "mpi_data_types.h"
 
 #ifdef __APPLE__
-#include "timing_mach.h"
+  #include "timing_mach.h"
+#endif
+
+#ifdef _linux_
+  #include <sys/time.h>
+  #include <time.h>
 #endif
 
 int main (int argc, char ** argv) {

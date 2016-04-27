@@ -12,6 +12,11 @@
 #include "timing_mach.h"
 #endif
 
+#ifdef _linux_
+  #include <sys/time.h>
+  #include <time.h>
+#endif
+
 int main (int argc, char ** argv) {
   int n_tasks, my_rank, colmax, total_pixels;
 
