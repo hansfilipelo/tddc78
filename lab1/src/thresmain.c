@@ -88,7 +88,12 @@ int main (int argc, char ** argv) {
   }
 
   // Scatter data to different processes
-  MPI_Scatter(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  if (my_rank == 0) {
+    MPI_Scatter(src, partitioned_pixels, mpi_pixel, MPI_IN_PLACE, partitioned_pixels, mpi_pixel, 0, com);
+  }
+  else{
+    MPI_Scatter(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  }
 
   partitioned_mean = calculate_partitioned_mean(partitioned_pixels, src);
 
@@ -109,7 +114,7 @@ int main (int argc, char ** argv) {
     thresfilter(remainder_pixels, total_mean, &src[total_pixels-remainder_pixels]);
   }
 
-  MPI_Gather(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  MPI_Gather(MPI_IN_PLACE, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
