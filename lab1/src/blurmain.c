@@ -135,20 +135,15 @@ int main (int argc, char ** argv) {
     MPI_Scatterv(src, send_count, displacements, mpi_pixel, src, send_count[my_rank], mpi_pixel, 0, com);
   }
 
+  // Run the filter
   blurfilter(size_data.width, send_count[my_rank]/size_data.width, src, radius, w, my_rank, n_tasks);
 
-  if (my_rank != 0) {
-    offset = radius; // Ugly hack as fuck
-  }
-  else {
-    offset = 0;
-  }
-
+  // Gather data to rank 0
   if (my_rank == 0) {
-    MPI_Gatherv(MPI_IN_PLACE, receive_count[my_rank], mpi_pixel, &src[offset*size_data.width], receive_count, receive_displacements, mpi_pixel, 0, com);
+    MPI_Gatherv(MPI_IN_PLACE, receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
   }
   else {
-    MPI_Gatherv(src, receive_count[my_rank], mpi_pixel, &src[offset*size_data.width], receive_count, receive_displacements, mpi_pixel, 0, com);
+    MPI_Gatherv(&src[radius*size_data.width], receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
   }
 
   if(my_rank == 0) {
