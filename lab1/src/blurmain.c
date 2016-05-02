@@ -96,7 +96,7 @@ int main (int argc, char ** argv) {
   displacements[0] = 0;
   receive_count[0] = partitioned_height*size_data.width;
   receive_displacements[0] = 0;
-  
+
   int i = 0;
   for (i = 1; i < n_tasks-1; i++) {
     send_count[i] = (2*radius + partitioned_height)*size_data.width;
@@ -113,11 +113,11 @@ int main (int argc, char ** argv) {
   if(my_rank != 0) {
       src = malloc(sizeof(pixel_t) * send_count[my_rank]);
   }
-  // TEST TEST TEST
-  if(my_rank == 0) {
-    printf("partitioned_height = %i, remainder_height = %i \n", partitioned_height, remainder_height);
-    printf("Width = %i, height = %i, send_count(my_rank) = %i, displacements(my_rank) = %i \n", size_data.width, size_data.height, send_count[my_rank], displacements[my_rank]);
-  }
+  // // TEST TEST TEST
+  // if(my_rank == 0) {
+  //   printf("partitioned_height = %i, remainder_height = %i \n", partitioned_height, remainder_height);
+  //   printf("Width = %i, height = %i, send_count(my_rank) = %i, displacements(my_rank) = %i \n", size_data.width, size_data.height, send_count[my_rank], displacements[my_rank]);
+  // }
 
   /* Calculate gaussian weights */
   get_gauss_weights(radius, w);
