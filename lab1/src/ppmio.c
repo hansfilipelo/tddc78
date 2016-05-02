@@ -37,6 +37,7 @@ int read_ppm (const char * fname,
 
 		if(*xpix * *ypix > MAX_PIXELS) {
 			fprintf (stderr, "Image size is too big\n");
+			fprintf (stderr, "Image size is %i and MAX_PIXELS are %i\n", *xpix * *ypix, MAX_PIXELS);
 			return 4;
 		};
 
