@@ -1,3 +1,6 @@
+#ifndef PPM_H
+#define PPM_H
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,3 +14,5 @@ int ppm_readmagicnumber(FILE *file);
 
 /* Read an ASCII integer from a ppm-file */
 int ppm_readint(FILE *file);
+
+#endif // PPM_H

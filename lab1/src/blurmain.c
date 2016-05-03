@@ -9,7 +9,12 @@
 #include "mpi_data_types.h"
 
 #ifdef __APPLE__
-#include "timing_mach.h"
+  #include "timing_mach.h"
+#endif
+
+#ifdef _linux_
+  #include <sys/time.h>
+  #include <time.h>
 #endif
 
 int main (int argc, char ** argv) {
@@ -29,6 +34,12 @@ int main (int argc, char ** argv) {
   MPI_Init( &argc, &argv );
   MPI_Comm_size( com, &n_tasks );
   MPI_Comm_rank( com, &my_rank );
+
+  /* Check that nr of tasks is larger than one */
+  if(n_tasks < 2) {
+    fprintf(stderr, "This implementation doesn't support fewer than two tasks\n");
+    exit(1);
+  }
 
   /* Take care of the arguments */
   if (argc != 4) {
@@ -92,7 +103,8 @@ int main (int argc, char ** argv) {
   receive_count[0] = partitioned_height*size_data.width;
   receive_displacements[0] = 0;
 
-  for (size_t i = 1; i < n_tasks-1; i++) {
+  int i = 0;
+  for (i = 1; i < n_tasks-1; i++) {
     send_count[i] = (2*radius + partitioned_height)*size_data.width;
     receive_count[i] = partitioned_height*size_data.width;
     displacements[i] = (partitioned_height*i-radius)*size_data.width - 1;
@@ -107,11 +119,11 @@ int main (int argc, char ** argv) {
   if(my_rank != 0) {
       src = malloc(sizeof(pixel_t) * send_count[my_rank]);
   }
-  // TEST TEST TEST
-  if(my_rank == 0) {
-    printf("partitioned_height = %i, remainder_height = %i \n", partitioned_height, remainder_height);
-    printf("Width = %i, height = %i, send_count(my_rank) = %i, displacements(my_rank) = %i \n", size_data.width, size_data.height, send_count[my_rank], displacements[my_rank]);
-  }
+  // // TEST TEST TEST
+  // if(my_rank == 0) {
+  //   printf("partitioned_height = %i, remainder_height = %i \n", partitioned_height, remainder_height);
+  //   printf("Width = %i, height = %i, send_count(my_rank) = %i, displacements(my_rank) = %i \n", size_data.width, size_data.height, send_count[my_rank], displacements[my_rank]);
+  // }
 
   /* Calculate gaussian weights */
   get_gauss_weights(radius, w);
@@ -122,18 +134,23 @@ int main (int argc, char ** argv) {
   }
 
   // Scatter data to different processes
-  MPI_Scatterv(src, send_count, displacements, mpi_pixel, src, send_count[my_rank], mpi_pixel, 0, com);
+  if (my_rank == 0) {
+    MPI_Scatterv(src, send_count, displacements, mpi_pixel, MPI_IN_PLACE, send_count[my_rank], mpi_pixel, 0, com);
+  }
+  else{
+    MPI_Scatterv(src, send_count, displacements, mpi_pixel, src, send_count[my_rank], mpi_pixel, 0, com);
+  }
 
+  // Run the filter
   blurfilter(size_data.width, send_count[my_rank]/size_data.width, src, radius, w, my_rank, n_tasks);
 
-  if (my_rank != 0) {
-    offset = radius; // Ugly hack as fuck
+  // Gather data to rank 0
+  if (my_rank == 0) {
+    MPI_Gatherv(MPI_IN_PLACE, receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
   }
   else {
-    offset = 0;
+    MPI_Gatherv(&src[radius*size_data.width], receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
   }
-
-  MPI_Gatherv(&src[offset*size_data.width], receive_count[my_rank], mpi_pixel, src, receive_count, receive_displacements, mpi_pixel, 0, com);
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
