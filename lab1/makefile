@@ -1,15 +1,28 @@
+UNAME=$(shell uname -s)
 
 CC = mpicc
 BLUR_EXEC = blur
 THRES_EXEC = thres
+CCFLAGS = --std=gnu99 -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD
+INC = 
+LDFLAGS = -lm
 
-CCFLAGS = -std=c99 -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD
-INC = $(shell mpicc --showme:compile)
-LDFLAGS = $(shell mpicc --showme:link)
-COMMON_FILES = src/ppm.c src/ppmio.c src/timing_mach.c src/mpi_data_types.c
-COMMON_H_FILES = src/ppm.h src/ppmio.h src/mpi_data_types.h
+COMMON_FILES= src/mpi_data_types.c src/ppm.c src/ppmio.c
+COMMON_H_FILES=src/ppm.h src/ppmio.h
 
-BLUR_SRC_FILES = $(wildcard src/blur*.c) src/gaussw.c $(COMMON_FILES)
+# Mac specific ----------- 
+
+ifeq ($(UNAME), Darwin)
+	INC += $(shell mpicc --showme:compile)
+	LDFLAGS += $(shell mpicc --showme:link)
+	COMMON_FILES += src/timing_mach.c
+	COMMON_H_FILES += src/timing_mach.h
+endif
+
+# End Mac specific ------
+
+BLUR_SRC_FILES = $(wildcard src/blur*.c) $(COMMON_FILES)
+BLUR_SRC_FILES += src/gaussw.c
 BLUR_H_FILES = $(wildcard src/blur*.h) $(wildcard src/ppm*.h) src/gaussw.h $(COMMON_H_FILES)
 BLUR_OBJS = $(BLUR_SRC_FILES:.c=.o)
 
