@@ -12,6 +12,11 @@
 #include "timing_mach.h"
 #endif
 
+#ifdef _linux_
+  #include <sys/time.h>
+  #include <time.h>
+#endif
+
 int main (int argc, char ** argv) {
   int n_tasks, my_rank, colmax, total_pixels;
 
@@ -83,7 +88,12 @@ int main (int argc, char ** argv) {
   }
 
   // Scatter data to different processes
-  MPI_Scatter(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  if (my_rank == 0) {
+    MPI_Scatter(src, partitioned_pixels, mpi_pixel, MPI_IN_PLACE, partitioned_pixels, mpi_pixel, 0, com);
+  }
+  else{
+    MPI_Scatter(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  }
 
   partitioned_mean = calculate_partitioned_mean(partitioned_pixels, src);
 
@@ -91,7 +101,7 @@ int main (int argc, char ** argv) {
 
   if(my_rank == 0)
   {
-    all_partitioned_means[0] = partitioned_mean;
+    //all_partitioned_means[0] = partitioned_mean; // Not needed since gather will put it here unless MPI_IN_PLACE specified
     all_partitioned_means[n_tasks] = calculate_partitioned_mean(remainder_pixels, &src[total_pixels - remainder_pixels]);
     total_mean = calculate_total_mean(all_partitioned_means, n_tasks+1, partitioned_pixels, remainder_pixels, total_pixels);
   }
@@ -104,11 +114,16 @@ int main (int argc, char ** argv) {
     thresfilter(remainder_pixels, total_mean, &src[total_pixels-remainder_pixels]);
   }
 
-  MPI_Gather(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  if (my_rank == 0) {
+    MPI_Gather(MPI_IN_PLACE, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  }
+  else{
+    MPI_Gather(src, partitioned_pixels, mpi_pixel, src, partitioned_pixels, mpi_pixel, 0, com);
+  }
 
   if(my_rank == 0) {
     clock_gettime(CLOCK_REALTIME, &etime);
-    printf("Gather picture after filtering\n");
+    printf("Gathered picture after filtering\n");
 
     printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
     1e-9*(etime.tv_nsec  - stime.tv_nsec)) ;
