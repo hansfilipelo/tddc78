@@ -30,6 +30,12 @@ int main (int argc, char ** argv) {
   MPI_Comm_size( com, &n_tasks );
   MPI_Comm_rank( com, &my_rank );
 
+  /* Check that nr of tasks is larger than one */
+  if(n_tasks < 2) {
+    fprintf(stderr, "This implementation doesn't support fewer than two tasks\n");
+    exit(1);
+  }
+
   /* Take care of the arguments */
   if (argc != 4) {
     if(my_rank == 0) {
