@@ -26,9 +26,11 @@ unsigned int calculate_total_mean(double* means, const unsigned int nr_of_means,
   unsigned int i;
 
   for (i = 0; i < nr_of_means-1; i++) {
-    total_mean += means[i]*partitioned_pixels/total_pixels;
+    total_mean += means[i]*partitioned_pixels;
   }
-  total_mean += means[i]*remainder_pixels/total_pixels;
+  total_mean += means[i]*remainder_pixels;
+
+  total_mean /= total_pixels;
 
   return (uint)total_mean;
 }
