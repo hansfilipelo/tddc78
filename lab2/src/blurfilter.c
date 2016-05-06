@@ -22,7 +22,7 @@ pixel_t* pix(pixel_t* image, const int xx, const int yy, const int xsize)
   return (image + off);
 }
 
-void blurfilter(const int xsize, const int ysize, pixel_t* src, const int radius,
+void blurfilter(const int xsize, const int ysize, const int partitioned_height, pixel_t* src, const int radius,
   const double *w, const int my_id, const int n_tasks, pthread_barrier_t* x_done_barrier)
   {
     int x,y,x2,y2, wi;
@@ -30,8 +30,15 @@ void blurfilter(const int xsize, const int ysize, pixel_t* src, const int radius
     pixel_t* dst = malloc(sizeof(pixel_t)*xsize*ysize);
 
     // Set start and stop values
-    int y_start = my_id*ysize, y_stop = my_id*ysize+ysize;
+    int y_start = my_id*partitioned_height, y_stop = my_id*partitioned_height+partitioned_height;
     int x_start = 0, x_stop = xsize;
+
+    if (my_id != 0) {
+        y_start -= radius;
+    }
+    if (my_id != n_tasks-1) {
+        y_stop += radius;
+    }
 
     for (y=y_start; y<y_stop; y++) {
       for (x=x_start; x<x_stop; x++) {
@@ -64,7 +71,7 @@ void blurfilter(const int xsize, const int ysize, pixel_t* src, const int radius
 
     // Set different start and stop values depending on current rank
     if(my_id != 0) {
-      y_start += radius - 1;
+      y_start += radius;
     }
     if(my_id != n_tasks-1) {
       y_stop -= radius;

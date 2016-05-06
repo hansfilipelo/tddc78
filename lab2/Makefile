@@ -2,7 +2,7 @@ UNAME=$(shell uname -s)
 
 CC = gcc
 EXEC = blur
-CCFLAGS = --std=gnu99 -Wall -DMAX_RAD=1000 -DMAX_PIXELS=MAX_RAD*MAX_RAD -D_N_TASKS_=4
+CCFLAGS = -g --std=gnu99 -Wall -DMAX_RAD=1000 -DMAX_PIXELS=MAX_RAD*MAX_RAD -D_N_TASKS_=4
 INC =
 LDFLAGS = -lpthread
 
@@ -33,4 +33,4 @@ $(EXEC): $(OBJS)
 	$(CC) $(CCFLAGS) $(INC) -c -o $@ $<
 
 clean:
-	rm -f $(EXEC) $(OBJS) $(THRES_EXEC) $(THRES_OBJS)
+	rm -f $(EXEC) $(OBJS)

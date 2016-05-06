@@ -42,7 +42,7 @@ void* pthread_blur_filter(void* id)
 {
     int my_id = *(int*)id;
 
-    blurfilter(size_data.width, partitioned_height, src, radius, w, my_id, _N_TASKS_, &x_done_barrier);
+    blurfilter(size_data.width, size_data.height, partitioned_height, src, radius, w, my_id, _N_TASKS_, &x_done_barrier);
 
 }
 
