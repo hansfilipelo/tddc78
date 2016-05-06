@@ -32,7 +32,7 @@ void blurfilter(const int xsize, const int ysize, const int partitioned_height, 
     // Set start and stop values
     int y_start = my_id*partitioned_height, y_stop = my_id*partitioned_height+partitioned_height;
     int x_start = 0, x_stop = xsize;
-
+    
     if (my_id != 0) {
         y_start -= radius;
     }
