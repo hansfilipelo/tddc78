@@ -33,6 +33,7 @@ pixel_t* src;
 
 // Memory barrier
 pthread_barrier_t x_done_barrier;
+pthread_barrier_t y_done_barrier;
 
 pthread_t worker_handles[_N_TASKS_];
 
@@ -42,9 +43,9 @@ void* pthread_blur_filter(void* id)
 {
     int my_id = *(int*)id;
 
-    blurfilter(size_data.width, size_data.height, partitioned_height, src, radius, w, my_id, _N_TASKS_, &x_done_barrier);
+    blurfilter(size_data.width, size_data.height, partitioned_height, src, radius, w, my_id, _N_TASKS_, &x_done_barrier, &y_done_barrier);
 
-    exit(0);
+    return NULL;
 }
 
 
@@ -54,6 +55,7 @@ int main (int argc, char ** argv) {
     // Init memory barrier
     int i; // iterator for later
     pthread_barrier_init(&x_done_barrier,NULL,_N_TASKS_);
+    pthread_barrier_init(&y_done_barrier,NULL,_N_TASKS_+1);
 
     /* Take care of the arguments */
     if (argc != 4) {
@@ -104,9 +106,7 @@ int main (int argc, char ** argv) {
     }
 
     // Wait for threads to finnish
-    for (i = 0; i < _N_TASKS_; i++) {
-        pthread_join(worker_handles[i], NULL);
-    }
+    pthread_barrier_wait(&y_done_barrier);
 
     // Time
     clock_gettime(CLOCK_REALTIME, &etime);

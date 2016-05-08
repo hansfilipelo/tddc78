@@ -23,7 +23,7 @@ pixel_t* pix(pixel_t* image, const int xx, const int yy, const int xsize)
 }
 
 void blurfilter(const int xsize, const int ysize, const int partitioned_height, pixel_t* src, const int radius,
-  const double *w, const int my_id, const int n_tasks, pthread_barrier_t* x_done_barrier)
+  const double *w, const int my_id, const int n_tasks, pthread_barrier_t* x_done_barrier, pthread_barrier_t* y_done_barrier)
   {
     int x,y,x2,y2, wi;
     double r,g,b,n, wc;
@@ -32,12 +32,15 @@ void blurfilter(const int xsize, const int ysize, const int partitioned_height, 
     // Set start and stop values
     int y_start = my_id*partitioned_height, y_stop = my_id*partitioned_height+partitioned_height;
     int x_start = 0, x_stop = xsize;
-    
+
     if (my_id != 0) {
         y_start -= radius;
     }
     if (my_id != n_tasks-1) {
         y_stop += radius;
+    }
+    if ( my_id == n_tasks-1 ) {
+        y_stop = ysize;
     }
 
     for (y=y_start; y<y_stop; y++) {
@@ -108,4 +111,5 @@ void blurfilter(const int xsize, const int ysize, const int partitioned_height, 
       }
     }
 
+    pthread_barrier_wait(y_done_barrier);
   }
