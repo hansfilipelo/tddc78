@@ -22,7 +22,7 @@
 int colmax;
 int offset;
 
-struct timespec stime, etime;
+struct timespec start_time, end_time;
 
 size_data_t size_data;
 unsigned int total_pixels;
@@ -96,7 +96,7 @@ int main (int argc, char ** argv) {
     remainder_height = size_data.height-(_N_TASKS_*partitioned_height);
 
     printf("Start worker threads to filter image\n");
-    clock_gettime(CLOCK_REALTIME, &stime);
+    clock_gettime(CLOCK_REALTIME, &start_time);
 
 
     // Spawn worker threads running the filter
@@ -124,10 +124,10 @@ int main (int argc, char ** argv) {
     printf("Here 3.\n");
 
     // Time
-    clock_gettime(CLOCK_REALTIME, &etime);
+    clock_gettime(CLOCK_REALTIME, &end_time);
 
-    printf("Filtering took: %g secs\n", (etime.tv_sec  - stime.tv_sec) +
-    1e-9*(etime.tv_nsec  - stime.tv_nsec)) ;
+    printf("Filtering took: %g secs\n", (end_time.tv_sec  - start_time.tv_sec) +
+    1e-9*(end_time.tv_nsec  - start_time.tv_nsec)) ;
 
     /* write result */
     printf("Writing output file\n");

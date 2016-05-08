@@ -3,7 +3,7 @@ UNAME=$(shell uname -s)
 CC = gcc
 BLUR_EXEC = blur
 THRES_EXEC = thres
-CCFLAGS = -g --std=gnu99 -Wall -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD -D_N_TASKS_=4
+CCFLAGS = -g --std=gnu99 -Wall -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD -D_N_TASKS_=16
 INC =
 LDFLAGS = -lpthread
 
@@ -17,6 +17,10 @@ ifeq ($(UNAME), Darwin)
 	LDFLAGS +=
 	COMMON_FILES += src/timing_mach.c src/barrier.c
 	COMMON_H_FILES += src/timing_mach.h src/barrier.h
+endif
+
+ifeq ($(UNAME), Linux)
+	LDFLAGS += -lm -lrt
 endif
 
 # End Mac specific ------
