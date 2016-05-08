@@ -111,17 +111,11 @@ int main (int argc, char ** argv) {
     // Wait for threads to finnish
     pthread_barrier_wait(&int_mean_done_barrier);
 
-    printf("Here 1.\n");
-
     total_mean = calculate_total_mean(intermediate_means, _N_TASKS_+1, partitioned_height*size_data.width, remainder_height*size_data.width, total_pixels);
 
     pthread_barrier_wait(&total_mean_done_barrier);
 
-    printf("Here 2.\n");
-
     pthread_barrier_wait(&thres_done_barrier);
-
-    printf("Here 3.\n");
 
     // Time
     clock_gettime(CLOCK_REALTIME, &end_time);
