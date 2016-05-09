@@ -7,15 +7,18 @@ program laplsolv
     ! Written by Fredrik Berntsson (frber@math.liu.se) March 2003
     ! Modified by Berkant Savas (besav@math.liu.se) April 2006
     !-----------------------------------------------------------------------
-    integer, parameter                      :: n=1000, maxiter=1000, nr_threads=4
+    integer, parameter                      :: n=1000, maxiter=1000
     double precision,parameter              :: tol=1.0E-3
     double precision,dimension(0:n+1,0:n+1) :: T
     double precision,dimension(n)           :: tmp, padding_before, padding_after
     double precision                        :: error,x
     double precision                        :: t1,t0
-    integer                                 :: i,j,k,chunk_size
+    integer                                 :: i,j,k,chunk_size, nr_threads
     character(len=20)                       :: str
 
+    write(*,*)  'Enter number of threads: '
+    read(*,*)   nr_threads
+    write(*,*)  'threads: ',nr_threads
     ! Set boundary conditions and initial values for the unknowns
     T=0.0D0
     T(0:n+1 , 0)     = 1.0D0
@@ -23,6 +26,7 @@ program laplsolv
     T(n+1   , 0:n+1) = 2.0D0
 
     chunk_size = n/nr_threads
+    call omp_set_num_threads(nr_threads)
 
     ! Solve the linear system of equations using the Jacobi method
     t0 = omp_get_wtime()
@@ -31,7 +35,10 @@ program laplsolv
 
         error=0.0D0
 
-        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T) reduction(max: error)
+        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T,error)
+        !write(*,*) 'Number of threads running ',omp_get_num_threads()
+        !write(*,*) 'Hello from thread ',OMP_GET_THREAD_NUM()
+
         padding_before = T(1:n,OMP_GET_THREAD_NUM()*chunk_size)
         padding_after = T(1:n,(OMP_GET_THREAD_NUM()+1)*chunk_size+1)
 
@@ -43,7 +50,7 @@ program laplsolv
             else
                 T(1:n,j) =(T(0:n-1,j)+T(2:n+1,j)+padding_after+padding_before)/4.0D0
             end if
-
+            !$omp flush(error)
             error=max(error,maxval(abs(tmp-T(1:n,j))))
             padding_before=tmp
         end do

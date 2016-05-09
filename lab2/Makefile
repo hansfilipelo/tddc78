@@ -1,7 +1,7 @@
 HOSTNAME=$(shell hostname)
 
 CF=gfortran
-CFFLAGS= -fopenmp #-DOMP_NUM_THREADS=4
+CFFLAGS= -fopenmp
 EXEC=laplsolv
 
 ifeq ($(HOSTNAME), triolith1)
