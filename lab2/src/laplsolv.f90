@@ -35,7 +35,7 @@ program laplsolv
 
         error=0.0D0
 
-        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T,error)
+        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T) reduction(max: error)
         !write(*,*) 'Number of threads running ',omp_get_num_threads()
         !write(*,*) 'Hello from thread ',OMP_GET_THREAD_NUM()
 
@@ -58,6 +58,7 @@ program laplsolv
         !$omp end parallel
 
         if (error<tol) then
+            write(*,*)
             write(unit=*,fmt=*) 'k = ',k,' , threadnr = ',OMP_GET_THREAD_NUM()
             write(unit=*,fmt=*) 'error = ',error
             exit
