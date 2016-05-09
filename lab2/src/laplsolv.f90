@@ -10,12 +10,11 @@ program laplsolv
     integer, parameter                      :: n=1000, maxiter=1000, nr_threads=4
     double precision,parameter              :: tol=1.0E-3
     double precision,dimension(0:n+1,0:n+1) :: T
-    double precision,dimension(n)           :: tmp1,tmp2
+    double precision,dimension(n)           :: tmp, padding_before, padding_after
     double precision                        :: error,x
-    real                                    :: t1,t0
+    double precision                        :: t1,t0
     integer                                 :: i,j,k,chunk_size
     character(len=20)                       :: str
-    double precision,dimension(0:n-1,0:nr_threads-1) :: padding
 
     ! Set boundary conditions and initial values for the unknowns
     T=0.0D0
@@ -26,29 +25,30 @@ program laplsolv
     chunk_size = n/nr_threads
 
     ! Solve the linear system of equations using the Jacobi method
-    call cpu_time(t0)
+    t0 = omp_get_wtime()
 
     do k=1,maxiter
 
-        tmp1=T(1:n,0)
         error=0.0D0
 
-        do i=0,nr_threads-1
-            padding(0:n-1,i) = T(1:n,(i+1)*chunk_size+1)
-        end do
+        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T) reduction(max: error)
+        padding_before = T(1:n,OMP_GET_THREAD_NUM()*chunk_size)
+        padding_after = T(1:n,(OMP_GET_THREAD_NUM()+1)*chunk_size+1)
 
-        !$omp parallel do schedule(STATIC,chunk_size) private(j,tmp1,tmp2) firstprivate(padding) shared(T) reduction(max: error)
+        !$omp do schedule(STATIC,chunk_size)
         do j=1,n
-            tmp2=T(1:n,j) !! FEEEEEEL
-            if((.NOT. j==chunk_size*(OMP_GET_THREAD_NUM()+1)) .OR. j==n) then
-                T(1:n,j) =(T(0:n-1,j)+T(2:n+1,j)+T(1:n,j+1)+tmp1)/4.0D0
+            tmp=T(1:n,j)
+            if((.NOT. j==chunk_size*(OMP_GET_THREAD_NUM()+1))) then
+                T(1:n,j) =(T(0:n-1,j)+T(2:n+1,j)+T(1:n,j+1)+padding_before)/4.0D0
             else
-                T(1:n,j) =(T(0:n-1,j)+T(2:n+1,j)+padding(0:n-1,OMP_GET_THREAD_NUM())+tmp1)/4.0D0
+                T(1:n,j) =(T(0:n-1,j)+T(2:n+1,j)+padding_after+padding_before)/4.0D0
             end if
-            error=max(error,maxval(abs(tmp2-T(1:n,j))))
-            tmp1=tmp2
+
+            error=max(error,maxval(abs(tmp-T(1:n,j))))
+            padding_before=tmp
         end do
-        !$omp end parallel do
+        !$omp end do
+        !$omp end parallel
 
         if (error<tol) then
             write(unit=*,fmt=*) 'k = ',k,' , threadnr = ',OMP_GET_THREAD_NUM()
@@ -58,7 +58,7 @@ program laplsolv
 
     end do
 
-    call cpu_time(t1)
+    t1 = omp_get_wtime()
 
     write(unit=*,fmt=*) 'Time:',t1-t0,'Number of Iterations:',k
     write(unit=*,fmt=*) 'Temperature of element T(1,1)  =',T(1,1)
