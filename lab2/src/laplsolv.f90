@@ -19,6 +19,7 @@ program laplsolv
     write(*,*)  'Enter number of threads: '
     read(*,*)   nr_threads
     write(*,*)  'threads: ',nr_threads
+    write(*,*)
     ! Set boundary conditions and initial values for the unknowns
     T=0.0D0
     T(0:n+1 , 0)     = 1.0D0
@@ -35,9 +36,7 @@ program laplsolv
 
         error=0.0D0
 
-        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T,error)
-        !write(*,*) 'Number of threads running ',omp_get_num_threads()
-        !write(*,*) 'Hello from thread ',OMP_GET_THREAD_NUM()
+        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T) reduction(max: error)
 
         padding_before = T(1:n,OMP_GET_THREAD_NUM()*chunk_size)
         padding_after = T(1:n,(OMP_GET_THREAD_NUM()+1)*chunk_size+1)
