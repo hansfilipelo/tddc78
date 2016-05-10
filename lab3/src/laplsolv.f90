@@ -81,11 +81,11 @@ program laplsolv
     ! Uncomment the next part if you want to write the whole solution
     ! to a file. Useful for plotting.
 
-    !open(unit=7,action='write',file='result.dat',status='unknown')
-    !write(unit=str,fmt='(a,i6,a)') '(',N,'F10.6)'
-    !do i=0,n+1
-    !   write (unit=7,fmt=str) T(i,0:n+1)
-    !end do
-    !close(unit=7)
+    open(unit=7,action='write',file='result.dat',status='unknown')
+    write(unit=str,fmt='(a,i6,a)') '(',N,'F10.6)'
+    do i=0,n+1
+      write (unit=7,fmt=str) T(i,0:n+1)
+    end do
+    close(unit=7)
 
 end program laplsolv
