@@ -1,7 +1,7 @@
 UNAME=$(shell uname -s)
 
 CC = mpicc
-EXEC = blur
+EXEC = physics
 CCFLAGS = --std=gnu99 -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD
 INC =
 LDFLAGS = -lm
