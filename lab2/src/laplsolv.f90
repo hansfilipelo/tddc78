@@ -7,7 +7,7 @@ program laplsolv
     ! Written by Fredrik Berntsson (frber@math.liu.se) March 2003
     ! Modified by Berkant Savas (besav@math.liu.se) April 2006
     !-----------------------------------------------------------------------
-    integer, parameter                      :: n=1000, maxiter=1000, nr_threads=4
+    integer, parameter                      :: n=1000, maxiter=1000, nr_threads=16
     double precision,parameter              :: tol=1.0E-3
     double precision,dimension(0:n+1,0:n+1) :: T
     double precision,dimension(n)           :: tmp
@@ -27,6 +27,13 @@ program laplsolv
 
     quote = n/nr_threads
 
+    do i=0,nr_threads-2
+        start_it(i) = (i*quote)+1
+        stop_it(i) = (i+1)*quote
+    end do
+    start_it(nr_threads-1) = ((nr_threads-1)*quote)+1
+    stop_it(nr_threads-1) = n
+
     call omp_set_num_threads(nr_threads)
 
     ! Solve the linear system of equations using the Jacobi method
@@ -38,17 +45,13 @@ program laplsolv
 
         ! Calculate start and stop criteria
         do i=0,nr_threads-2
-            start_it(i) = (i*quote)+1
-            stop_it(i) = (i+1)*quote
             padding_before(0:n-1, i) = T(1:n, start_it(i)-1)
             padding_after(0:n-1, i) = T(1:n, stop_it(i)+1)
         end do
-        start_it(nr_threads-1) = ((nr_threads-1)*quote)+1
-        stop_it(nr_threads-1) = n
         padding_before(0:n-1, nr_threads-1) = T(1:n,start_it(nr_threads-1)-1)
         padding_after(0:n-1, nr_threads-1) = T(1:n,stop_it(nr_threads-1)+1)
 
-        !$omp parallel private(j,tmp1,tmp,padding_before,padding_after) shared(T) reduction(max: error)
+        !$omp parallel private(j,tmp,my_id) shared(T,padding_before,padding_after) reduction(max: error)
         my_id = OMP_GET_THREAD_NUM()
 
         do j=start_it(my_id),stop_it(my_id)-1
@@ -62,7 +65,6 @@ program laplsolv
         T(1:n,stop_it(my_id)) = &
             (T(0:n-1,stop_it(my_id))+T(2:n+1,stop_it(my_id))+padding_after(0:n-1,my_id)+padding_before(0:n-1,my_id))/4.0D0
         error=max(error,maxval(abs(tmp-T(1:n,stop_it(my_id)))))
-        padding_before(0:n-1, my_id)=tmp
 
         !$omp end parallel
 
