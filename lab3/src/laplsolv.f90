@@ -65,13 +65,9 @@ program laplsolv
         T(1:n,stop_it(my_id)) = &
             (T(0:n-1,stop_it(my_id))+T(2:n+1,stop_it(my_id))+padding_after(0:n-1,my_id)+padding_before(0:n-1,my_id))/4.0D0
         error=max(error,maxval(abs(tmp-T(1:n,stop_it(my_id)))))
-
         !$omp end parallel
 
         if (error<tol) then
-            write(*,*)
-            write(unit=*,fmt=*) 'k = ',k,' , threadnr = ',my_id
-            write(unit=*,fmt=*) 'error = ',error
             exit
         end if
 
