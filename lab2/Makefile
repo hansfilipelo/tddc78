@@ -1,7 +1,7 @@
 HOSTNAME=$(shell hostname)
 
 CF=gfortran
-CFFLAGS= -fopenmp -Wno-error=line-truncation
+CFFLAGS= -fopenmp
 EXEC=laplsolv
 
 ifeq ($(HOSTNAME), triolith1)
