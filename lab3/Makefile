@@ -1,7 +1,8 @@
+
 HOSTNAME=$(shell hostname)
 
 CF=gfortran
-CFFLAGS= -DOMP_NUM_THREADS=4 -fopenmp
+CFFLAGS= -fopenmp
 EXEC=laplsolv
 
 ifeq ($(HOSTNAME), triolith1)
@@ -12,8 +13,7 @@ endif
 all: $(EXEC)
 
 $(EXEC): src/laplsolv.f90
-	$(CF) $(CCFLAGS) $^ -o $@
+	$(CF) $(CFFLAGS) $^ -o $@
 
 clean:
 	rm -rf $(EXEC)
-
