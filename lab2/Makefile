@@ -3,7 +3,7 @@ UNAME=$(shell uname -s)
 CC = gcc
 BLUR_EXEC = blur
 THRES_EXEC = thres
-CCFLAGS = -g --std=gnu99 -Wall -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD -D_N_TASKS_=16
+CCFLAGS = -g --std=gnu99 -Wall -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD -D_N_TASKS_=4
 INC =
 LDFLAGS = -lpthread
 
