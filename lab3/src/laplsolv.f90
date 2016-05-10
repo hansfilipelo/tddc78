@@ -6,6 +6,7 @@ program laplsolv
     ! on a square using the Jacobi method.
     ! Written by Fredrik Berntsson (frber@math.liu.se) March 2003
     ! Modified by Berkant Savas (besav@math.liu.se) April 2006
+    ! Parallelized for openmp by Hans-Filip Elo and Frida Sundberg May 2016
     !-----------------------------------------------------------------------
     integer, parameter                      :: n=1000, maxiter=1000, nr_threads=4
     double precision,parameter              :: tol=1.0E-3
@@ -14,7 +15,7 @@ program laplsolv
     double precision                        :: error,x
     double precision                        :: t1,t0
     integer                                 :: i,j,k
-    integer                                 :: quote,my_id
+    integer                                 :: ratio,my_id
     integer,dimension(nr_threads)           :: start_it,stop_it
     character(len=20)                       :: str
     double precision,dimension(0:n-1,0:nr_threads-1)   :: padding_before,padding_after
@@ -25,13 +26,13 @@ program laplsolv
     T(0:n+1 , n+1)   = 1.0D0
     T(n+1   , 0:n+1) = 2.0D0
 
-    quote = n/nr_threads
+    ratio = n/nr_threads
 
     do i=0,nr_threads-2
-        start_it(i) = (i*quote)+1
-        stop_it(i) = (i+1)*quote
+        start_it(i) = (i*ratio)+1
+        stop_it(i) = (i+1)*ratio
     end do
-    start_it(nr_threads-1) = ((nr_threads-1)*quote)+1
+    start_it(nr_threads-1) = ((nr_threads-1)*ratio)+1
     stop_it(nr_threads-1) = n
 
     call omp_set_num_threads(nr_threads)
@@ -43,7 +44,7 @@ program laplsolv
 
         error=0.0D0
 
-        ! Calculate start and stop criteria
+        ! Calculate padding arrays
         do i=0,nr_threads-2
             padding_before(0:n-1, i) = T(1:n, start_it(i)-1)
             padding_after(0:n-1, i) = T(1:n, stop_it(i)+1)
@@ -81,11 +82,11 @@ program laplsolv
     ! Uncomment the next part if you want to write the whole solution
     ! to a file. Useful for plotting.
 
-    open(unit=7,action='write',file='result.dat',status='unknown')
-    write(unit=str,fmt='(a,i6,a)') '(',N,'F10.6)'
-    do i=0,n+1
-      write (unit=7,fmt=str) T(i,0:n+1)
-    end do
-    close(unit=7)
+    ! open(unit=7,action='write',file='result.dat',status='unknown')
+    ! write(unit=str,fmt='(a,i6,a)') '(',N,'F10.6)'
+    ! do i=0,n+1
+    !   write (unit=7,fmt=str) T(i,0:n+1)
+    ! end do
+    ! close(unit=7)
 
 end program laplsolv
