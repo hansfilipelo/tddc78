@@ -20,6 +20,7 @@ int main(int argc, char** argv)
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
     vector<pcord_t*> particles;
+    vector<pcord_t*> tmp_particles;
     float vert_stop;
 
     if ( my_rank != n_tasks-1 ) {
@@ -44,6 +45,7 @@ int main(int argc, char** argv)
     // Main loop: for each time-step do
     float total_momentum = 0;
     float collision;
+
     // Temporary storage for transfers
     vector<pcord_t*> up_transfers;
     vector<pcord_t*> down_transfers;
@@ -60,14 +62,35 @@ int main(int argc, char** argv)
 
             total_momentum += wall_collide(*particle,box);
 
-            if ( (*particle)->y <= my_cords.y0 ) {
+            if ( (*particle)->y < my_cords.y0 ) {
                 up_transfers.push_back(*particle);
             }
-            else if ( (*particle)->y >= my_cords.y1 ){
+            else if ( (*particle)->y > my_cords.y1 ){
                 down_transfers.push_back(*particle);
             }
+            else{
+                tmp_particles.push_back(*particle);
+            }
         }
+
+        total_momentum += wall_collide(*(particles.end()-1),box);
+
+        if ( (*(particles.end()-1))->y < my_cords.y0 ) {
+            up_transfers.push_back(*(particles.end()-1));
+        }
+        else if ( (*(particles.end()-1))->y > my_cords.y1 ){
+            down_transfers.push_back(*(particles.end()-1));
+        }
+        else{
+            tmp_particles.push_back(*(particles.end()-1));
+        }
+
+        
+        particles.erase(particles.begin(), particles.end());
+        particles.swap(tmp_particles);
     }
+
+
 
 
 
