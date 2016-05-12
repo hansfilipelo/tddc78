@@ -13,8 +13,8 @@
 #define INIT_NO_PARTICLES 500   /* Initial number of particles/processor */
 #define MAX_INITIAL_VELOCITY 50
 
-#define _UP_
-#define _DOWN_
+#define _UP_ -1
+#define _DOWN_ 1
 
 #define BOX_HORIZ_SIZE 10000.0
 #define BOX_VERT_SIZE 10000.0

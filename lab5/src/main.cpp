@@ -8,14 +8,18 @@ int main(int argc, char** argv)
     Utils::init();
     // Init mpi
     int n_tasks, my_rank;
+    MPI_Datatype mpi_particle;
+    pcord_t mpi_p;
+
     MPI_Comm com = MPI_COMM_WORLD;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(com, &n_tasks);
     MPI_Comm_rank(com, &my_rank);
+    create_mpi_particle_t(&mpi_p, &mpi_particle);
 
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
-    vector<pcord_t> particles;
+    vector<pcord_t*> particles;
     float vert_stop;
 
     if ( my_rank != n_tasks-1 ) {
@@ -34,23 +38,34 @@ int main(int argc, char** argv)
         p->y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
         p->vx = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
         p->vy = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
-        particles.push_back(*p);
+        particles.push_back(p);
     }
 
     // Main loop: for each time-step do
     float total_momentum = 0;
     float collision;
+    // Temporary storage for transfers
+    vector<pcord_t*> up_transfers;
+    vector<pcord_t*> down_transfers;
+
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
 
-        for (vector<pcord_t>::iterator particle = particles.begin(); particle != particles.end()-1; ++particle) {
+        for (vector<pcord_t*>::iterator particle = particles.begin(); particle != particles.end()-1; ++particle) {
 
-            for (vector<pcord_t>::iterator other_particle = particle+1; other_particle != particles.end(); ++other_particle) {
+            for (vector<pcord_t*>::iterator other_particle = particle+1; other_particle != particles.end(); ++other_particle) {
 
-                collision = collide(&(*particle), &(*other_particle));
-                interact(&(*particle), &(*other_particle), collision);
+                collision = collide(*particle, *other_particle);
+                interact(*particle, *other_particle, collision);
             }
 
-            total_momentum += wall_collide(&(*particle),box);
+            total_momentum += wall_collide(*particle,box);
+
+            if ( (*particle)->y <= my_cords.y0 ) {
+                up_transfers.push_back(*particle);
+            }
+            else if ( (*particle)->y >= my_cords.y1 ){
+                down_transfers.push_back(*particle);
+            }
         }
     }
 
