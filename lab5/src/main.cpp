@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
-    vector<particle_t> particles;
+    vector<pcord_t> particles;
     float vert_stop;
 
     if ( my_rank != n_tasks-1 ) {
@@ -29,11 +29,11 @@ int main(int argc, char** argv)
 
     // Initiate particles
     for (size_t i = 0; i < INIT_NO_PARTICLES; i++) {
-        particle_t* p = new particle_t();
-        p->pcord.x = Utils::generate_random_float(my_cords.x0, my_cords.x1);
-        p->pcord.y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
-        p->pcord.vx = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
-        p->pcord.vy = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
+        pcord_t* p = new pcord_t();
+        p->x = Utils::generate_random_float(my_cords.x0, my_cords.x1);
+        p->y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
+        p->vx = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
+        p->vy = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
         particles.push_back(*p);
     }
 
@@ -42,19 +42,20 @@ int main(int argc, char** argv)
     float collision;
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
 
-        for (vector<particle_t>::iterator particle = particles.begin(); particle != particles.end()-1; ++particle) {
+        for (vector<pcord_t>::iterator particle = particles.begin(); particle != particles.end()-1; ++particle) {
 
-            for (vector<particle_t>::iterator other_particle = particle+1; other_particle != particles.end(); ++other_particle) {
+            for (vector<pcord_t>::iterator other_particle = particle+1; other_particle != particles.end(); ++other_particle) {
 
-                collision = collide(&particle->pcord, &other_particle->pcord);
-                interact(&particle->pcord, &other_particle->pcord, collision);
+                collision = collide(&(*particle), &(*other_particle));
+                interact(&(*particle), &(*other_particle), collision);
             }
 
-            total_momentum += wall_collide(&particle->pcord,box);
+            total_momentum += wall_collide(&(*particle),box);
         }
     }
 
-    printf("%f\n", total_momentum);
+
+
     // for all particles do
     // Check for collisions.
     // Move particles that has not collided with another.

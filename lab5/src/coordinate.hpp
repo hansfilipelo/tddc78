@@ -1,21 +1,18 @@
 #ifndef _coordinate_h
 #define _coordinate_h
 
-struct cord {
+typedef struct {
     float x0 ;
     float x1 ;
     float y0 ;
     float y1 ;
-} ;
+} cord_t;
 
-struct part_cord {
+typedef struct {
     float x ;
     float y ;
     float vx ;
     float vy ;
-} ;
-
-typedef struct cord cord_t ;
-typedef struct part_cord pcord_t ;
+} pcord_t;
 
 #endif
