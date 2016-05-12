@@ -1,8 +1,8 @@
 #include<stdlib.h>
 #include<math.h>
 
-#include "coordinate.h"
-#include "physics.h"
+#include "coordinate.hpp"
+#include "physics.hpp"
 
 #ifndef _definitions_h
 #define _definitions_h

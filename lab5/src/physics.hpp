@@ -1,7 +1,7 @@
 #ifndef _physics_h
 #define _physics_h
 
-#include "coordinate.h"
+#include "coordinate.hpp"
 
 #define STEP_SIZE 1.0 /* the step size use in the integration */
 

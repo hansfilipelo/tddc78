@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "physics.h"
+#include "physics.hpp"
 
 
 #ifndef sqr

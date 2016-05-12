@@ -1,22 +1,20 @@
 UNAME=$(shell uname -s)
 
-CC = mpicc
+CC = mpic++
 EXEC = physics
-CCFLAGS = --std=gnu99 -DMAX_RAD=10000 -DMAX_PIXELS=MAX_RAD*MAX_RAD
+CCFLAGS = --std=c++14 -D_SIMULATION_TIME_=1000
 INC =
 LDFLAGS = -lm
 
-SRC_FILES = $(wildcard src/*.c)
-H_FILES = $(wildcard src/*.h)
-OBJS = $(SRC_FILES:.c=.o)
+SRC_FILES = $(wildcard src/*.cpp)
+H_FILES = $(wildcard src/*.hpp)
+OBJS = $(SRC_FILES:.cpp=.o)
 
 # Mac specific -----------
 
 ifeq ($(UNAME), Darwin)
-	INC += $(shell mpicc --showme:compile)
-	LDFLAGS += $(shell mpicc --showme:link)
-	COMMON_FILES += src/timing_mach.c
-	COMMON_H_FILES += src/timing_mach.h
+	INC += $(shell mpic++ --showme:compile)
+	LDFLAGS += $(shell mpic++ --showme:link)
 endif
 
 # End Mac specific ------
@@ -26,7 +24,7 @@ all: $(EXEC)
 $(EXEC): $(OBJS)
 	$(CC) $(OBJS) $(INC) -o $(EXEC) $(LDFLAGS)
 
-%.o: %.c %.h
+%.o: %.cpp %.hpp
 	$(CC) $(CCFLAGS) $(INC) -c -o $@ $<
 
 clean:
