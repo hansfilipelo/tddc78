@@ -2,7 +2,7 @@ UNAME=$(shell uname -s)
 
 CC = mpic++
 EXEC = physics
-CCFLAGS = --std=c++14 -D_SIMULATION_TIME_=1000
+CCFLAGS = --std=c++14 -D_SIMULATION_STEPS_=1000
 INC =
 LDFLAGS = -lm
 
