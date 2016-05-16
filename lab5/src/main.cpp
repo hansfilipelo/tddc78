@@ -62,7 +62,6 @@ int main(int argc, char** argv)
     vector<int> pos_to_erase;
 
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
-        cout << "My rank: " << my_rank << ", sim step: " << t << endl;
         // Check for collisions.
         // Move particles that has not collided with another.
         // Check for wall interaction and add the momentum.
@@ -75,9 +74,19 @@ int main(int argc, char** argv)
             for (size_t i = 0; i < last_pos; i++) {
                 particle = particles.at(i);
                 for (size_t j = i+1; j < last_pos+1; j++) {
+
                     other_particle = particles.at(j);
                     collision = collide(particle, other_particle);
-                    interact(particle, other_particle, collision);
+
+                    if (collision == -1) {
+                        interact(particle, other_particle, collision);
+                        last_pos--;
+                        tmp_particles.push_back(other_particle);
+                        swap(particles.at(j), particles.back());
+                    }
+                    else{
+                        feuler(particle, STEP_SIZE);
+                    }
                 }
 
                 total_momentum += wall_collide(particle,box);
@@ -126,9 +135,7 @@ int main(int argc, char** argv)
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &send_count_request);
 
             if(send_count != 0) {
-                cout << "Before first ibsend for rank " << my_rank << endl;
                 MPI_Isend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
-                cout << "After first ibsend for rank " << my_rank << endl;
             }
         }
         if ( my_rank != 0) {
@@ -208,9 +215,7 @@ int main(int argc, char** argv)
             send_count = up_transfers.size();
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
             if(send_count != 0) {
-                cout << "Before second ibsend for rank " << my_rank << ", send count: " << send_count << endl;
                 MPI_Isend(&up_transfers.at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
-                cout << "After second ibsend for rank " << my_rank << endl;
             }
         }
 
