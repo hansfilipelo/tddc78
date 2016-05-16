@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     MPI_Request receive_count_request;
     unsigned recv_count = 0;
     int send_count = 0;
-    pcord_t* recv_buffer = (pcord_t*)malloc(0);
+    pcord_t* recv_buffer;
 
     MPI_Comm com = MPI_COMM_WORLD;
     MPI_Init(&argc, &argv);
@@ -124,9 +124,7 @@ int main(int argc, char** argv)
             MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &send_count_request);
 
             if(send_count != 0) {
-                cout << "here1, rank: " << my_rank << "send_count: " << send_count << endl;
                 MPI_Ibsend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
-                cout << "here2, " << my_rank << endl;
             }
         }
 
@@ -134,16 +132,14 @@ int main(int argc, char** argv)
             // Receive the nr of elements to get from processor my_rank-1
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
-            ////cout << "my_rank = " << my_rank << " -> Has recieved recv_count " << recv_count << " from my_rank-1\n" << endl;
 
             if(recv_count != 0) {
                 // Allocate buffer
-                recv_buffer = (pcord_t*)realloc(recv_buffer, sizeof(mpi_particle)*recv_count);
+                recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
 
                 // Receive elements from my_rank-1
-                MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &send_data_request);
+                MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &receive_data_request);
                 MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
-                ////cout << "my_rank = " << my_rank << " -> Has recieved particles from my_rank-1\n" << endl;
 
                 // Check whether receive particles and upgoing particles collide
                 pcord_t *particle, *other_particle;
@@ -194,7 +190,7 @@ int main(int argc, char** argv)
                 }
 
                 // Free the receive buffer
-                // free(recv_buffer);
+                free(recv_buffer);
             }
 
             // Send particles to my_rank-1
@@ -221,10 +217,10 @@ int main(int argc, char** argv)
 
             if(recv_count != 0) {
                 // Allocate recv buffer
-                recv_buffer = (pcord_t*)realloc(recv_buffer, sizeof(pcord_t)*recv_count);
+                recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
 
                 // Get the particles!
-                MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank+1, my_rank, com, &send_data_request);
+                MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank+1, my_rank, com, &receive_data_request);
                 MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
 
                 for (size_t i = 0; i < recv_count; i++) {
@@ -236,7 +232,7 @@ int main(int argc, char** argv)
                     particles.push_back(p);
                 }
 
-                //free(recv_buffer);
+                free(recv_buffer);
             }
         }
 
@@ -254,7 +250,7 @@ int main(int argc, char** argv)
 
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
-        cout << "Pressure = " << total_momentum << endl;
+            cout << "Pressure = " << total_momentum << endl;
     }
     else {
         MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
