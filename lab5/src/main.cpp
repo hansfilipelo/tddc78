@@ -71,52 +71,54 @@ int main(int argc, char** argv)
         pcord_t* other_particle;
         size_t last_pos = particles.size()-1;
 
-        for (size_t i = 0; i < last_pos; i++) {
-            particle = particles.at(i);
-            for (size_t j = i+1; j < last_pos+1; j++) {
-                other_particle = particles.at(j);
-                collision = collide(particle, other_particle);
-                interact(particle, other_particle, collision);
+        if (particles.size() > 0){
+            for (size_t i = 0; i < last_pos; i++) {
+                particle = particles.at(i);
+                for (size_t j = i+1; j < last_pos+1; j++) {
+                    other_particle = particles.at(j);
+                    collision = collide(particle, other_particle);
+                    interact(particle, other_particle, collision);
+                }
+
+                total_momentum += wall_collide(particle,box);
+
+                if ( particle->y < my_cords.y0 ) {
+                    up_transfers.push_back(*particle);
+                    pos_to_erase.push_back(i);
+                }
+                else if ( particle->y > my_cords.y1 ){
+                    down_transfers.push_back(*particle);
+                    pos_to_erase.push_back(i);
+                }
+                else{
+                    tmp_particles.push_back(particle);
+                }
             }
 
+            particle = particles.at(last_pos);
             total_momentum += wall_collide(particle,box);
 
             if ( particle->y < my_cords.y0 ) {
                 up_transfers.push_back(*particle);
-                pos_to_erase.push_back(i);
+                pos_to_erase.push_back(last_pos);
             }
             else if ( particle->y > my_cords.y1 ){
                 down_transfers.push_back(*particle);
-                pos_to_erase.push_back(i);
+                pos_to_erase.push_back(last_pos);
             }
             else{
                 tmp_particles.push_back(particle);
             }
-        }
 
-        particle = particles.at(last_pos);
-        total_momentum += wall_collide(particle,box);
-
-        if ( particle->y < my_cords.y0 ) {
-            up_transfers.push_back(*particle);
-            pos_to_erase.push_back(last_pos);
+            // Free memory
+            size_t pos_to_erase_size = pos_to_erase.size();
+            for (size_t i = 0; i < pos_to_erase_size; i++) {
+                delete particles.at(pos_to_erase.back());
+                pos_to_erase.pop_back();
+            }
+            particles.erase(particles.begin(), particles.end());
+            particles.swap(tmp_particles);
         }
-        else if ( particle->y > my_cords.y1 ){
-            down_transfers.push_back(*particle);
-            pos_to_erase.push_back(last_pos);
-        }
-        else{
-            tmp_particles.push_back(particle);
-        }
-
-        // Free memory
-        size_t pos_to_erase_size = pos_to_erase.size();
-        for (size_t i = 0; i < pos_to_erase_size; i++) {
-            delete particles.at(pos_to_erase.back());
-            pos_to_erase.pop_back();
-        }
-        particles.erase(particles.begin(), particles.end());
-        particles.swap(tmp_particles);
 
         // Send particles who should change processing element
         if (my_rank != n_tasks-1) {
@@ -129,7 +131,6 @@ int main(int argc, char** argv)
                 cout << "After first ibsend for rank " << my_rank << endl;
             }
         }
-
         if ( my_rank != 0) {
             // Receive the nr of elements to get from processor my_rank-1
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &receive_count_request);
@@ -255,7 +256,7 @@ int main(int argc, char** argv)
 
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
-            cout << "Pressure = " << total_momentum << endl;
+        cout << "Pressure = " << total_momentum << endl;
     }
     else {
         MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
