@@ -39,7 +39,7 @@ int main(int argc, char** argv)
         vert_stop = (float)BOX_VERT_SIZE;
     }
 
-    cord_t my_cords = {0, (float)BOX_HORIZ_SIZE, ((float)BOX_HORIZ_SIZE/n_tasks)*my_rank, vert_stop};
+    cord_t my_cords = {0, (float)BOX_HORIZ_SIZE, ((float)BOX_VERT_SIZE/n_tasks)*my_rank, vert_stop};
 
     // Initiate particles
     for (size_t i = 0; i < INIT_NO_PARTICLES; i++) {
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
     vector<int> pos_to_erase;
 
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
-
+        cout << "My rank: " << my_rank << ", sim step: " << t << endl;
         // Check for collisions.
         // Move particles that has not collided with another.
         // Check for wall interaction and add the momentum.
@@ -121,10 +121,12 @@ int main(int argc, char** argv)
         // Send particles who should change processing element
         if (my_rank != n_tasks-1) {
             send_count = down_transfers.size();
-            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &send_count_request);
+            MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &send_count_request);
 
             if(send_count != 0) {
-                MPI_Ibsend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+                cout << "Before first ibsend for rank " << my_rank << endl;
+                MPI_Isend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+                cout << "After first ibsend for rank " << my_rank << endl;
             }
         }
 
@@ -193,7 +195,8 @@ int main(int argc, char** argv)
                 free(recv_buffer);
             }
 
-            // Send particles to my_rank-1
+
+            // Wait for send to finish if not finished
             if (my_rank != n_tasks-1) { // First see that send_count is available for reuse
                 MPI_Wait(&send_count_request, MPI_STATUS_IGNORE);
                 if(send_count != 0) {
@@ -202,9 +205,11 @@ int main(int argc, char** argv)
             }
 
             send_count = up_transfers.size();
-            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
+            MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
             if(send_count != 0) {
-                MPI_Ibsend(&up_transfers.at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
+                cout << "Before second ibsend for rank " << my_rank << ", send count: " << send_count << endl;
+                MPI_Isend(&up_transfers.at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
+                cout << "After second ibsend for rank " << my_rank << endl;
             }
         }
 
