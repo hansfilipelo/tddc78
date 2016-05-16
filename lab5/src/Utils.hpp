@@ -5,6 +5,6 @@ class Utils
 {
 public:
     static float generate_random_float(float from, float to);
-    static void init();
+    static void init(int my_rank);
 private:
 };

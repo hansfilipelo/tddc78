@@ -13,8 +13,8 @@
 #define INIT_NO_PARTICLES 500   /* Initial number of particles/processor */
 #define MAX_INITIAL_VELOCITY 50
 
-#define BOX_HORIZ_SIZE 100.0
-#define BOX_VERT_SIZE 100.0
+#define BOX_HORIZ_SIZE 1000.0
+#define BOX_VERT_SIZE 1000.0
 #define WALL_LENGTH (2.0*BOX_HORIZ_SIZE+2.0*BOX_VERT_SIZE)
 
 #define PARTICLE_BUFFER_SIZE MAX_NO_PARTICLES/5

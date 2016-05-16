@@ -4,8 +4,6 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    // Init random nr generator
-    Utils::init();
     // Init mpi
     int n_tasks, my_rank;
     MPI_Datatype mpi_particle;
@@ -15,15 +13,18 @@ int main(int argc, char** argv)
     MPI_Request send_data_request;
     MPI_Request receive_data_request;
     MPI_Request receive_count_request;
-    unsigned recv_count;
-    int send_count;
-    pcord_t* recv_buffer;
+    unsigned recv_count = 0;
+    int send_count = 0;
+    pcord_t* recv_buffer = (pcord_t*)malloc(0);
 
     MPI_Comm com = MPI_COMM_WORLD;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(com, &n_tasks);
     MPI_Comm_rank(com, &my_rank);
     create_mpi_particle_t(mpi_p, &mpi_particle);
+
+    // Init random nr generator
+    Utils::init(my_rank);
 
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
@@ -76,11 +77,11 @@ int main(int argc, char** argv)
 
             if ( (*particle)->y < my_cords.y0 ) {
                 up_transfers.push_back(**particle);
-                delete *particle;
+                delete *particle; // TODO: destroys iterator as it is now
             }
             else if ( (*particle)->y > my_cords.y1 ){
                 down_transfers.push_back(**particle);
-                delete *particle;
+                delete *particle; // TODO: destroys iterator as it is now
             }
             else{
                 tmp_particles.push_back(*particle);
@@ -106,8 +107,11 @@ int main(int argc, char** argv)
         if (my_rank != n_tasks-1) {
             send_count = down_transfers.size();
             MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &send_count_request);
+
             if(send_count != 0) {
-                MPI_Ibsend(&down_transfers.front(), down_transfers.size(), mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+                cout << "here1, rank: " << my_rank << "send_count: " << send_count << endl;
+                MPI_Ibsend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+                cout << "here2, " << my_rank << endl;
             }
         }
 
@@ -119,7 +123,7 @@ int main(int argc, char** argv)
 
             if(recv_count != 0) {
                 // Allocate buffer
-                recv_buffer = (pcord_t*)malloc(sizeof(mpi_particle)*recv_count);
+                recv_buffer = (pcord_t*)realloc(recv_buffer, sizeof(mpi_particle)*recv_count);
 
                 // Receive elements from my_rank-1
                 MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &send_data_request);
@@ -175,7 +179,7 @@ int main(int argc, char** argv)
                 }
 
                 // Free the receive buffer
-                free(recv_buffer);
+                // free(recv_buffer);
             }
 
             // Send particles to my_rank-1
@@ -189,7 +193,7 @@ int main(int argc, char** argv)
             send_count = up_transfers.size();
             MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &send_count_request);
             if(send_count != 0) {
-                MPI_Ibsend(&up_transfers.front(), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
+                MPI_Ibsend(&up_transfers.at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
             }
         }
 
@@ -202,7 +206,7 @@ int main(int argc, char** argv)
 
             if(recv_count != 0) {
                 // Allocate recv buffer
-                recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
+                recv_buffer = (pcord_t*)realloc(recv_buffer, sizeof(pcord_t)*recv_count);
 
                 // Get the particles!
                 MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank+1, my_rank, com, &send_data_request);
@@ -217,7 +221,7 @@ int main(int argc, char** argv)
                     particles.push_back(p);
                 }
 
-                free(recv_buffer);
+                //free(recv_buffer);
             }
         }
 
@@ -226,6 +230,8 @@ int main(int argc, char** argv)
         if(send_count != 0) {
             MPI_Wait(&send_data_request, MPI_STATUS_IGNORE);
         }
+        up_transfers.clear();
+        down_transfers.clear();
     }
 
     // Reduction and calculate pressure.
