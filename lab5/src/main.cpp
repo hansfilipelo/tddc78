@@ -60,6 +60,10 @@ int main(int argc, char** argv)
 
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
 
+        // Check for collisions.
+        // Move particles that has not collided with another.
+        // Check for wall interaction and add the momentum.
+        // Check if particles need to be communicated
         for (vector<pcord_t*>::iterator particle = particles.begin(); particle != particles.end()-1; ++particle) {
 
             for (vector<pcord_t*>::iterator other_particle = particle+1; other_particle != particles.end(); ++other_particle) {
@@ -95,7 +99,6 @@ int main(int argc, char** argv)
             tmp_particles.push_back(*(particles.end()-1));
         }
 
-
         particles.erase(particles.begin(), particles.end());
         particles.swap(tmp_particles);
 
@@ -103,80 +106,91 @@ int main(int argc, char** argv)
         if (my_rank != n_tasks-1) {
             send_count = down_transfers.size();
             MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &send_count_request);
-            MPI_Ibsend(&down_transfers.front(), down_transfers.size(), mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+            if(send_count != 0) {
+                MPI_Ibsend(&down_transfers.front(), down_transfers.size(), mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+            }
         }
 
         if ( my_rank != 0) {
             // Receive the nr of elements to get from processor my_rank-1
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
+            ////cout << "my_rank = " << my_rank << " -> Has recieved recv_count " << recv_count << " from my_rank-1\n" << endl;
 
-            // Allocate buffer
-            recv_buffer = (pcord_t*)malloc(sizeof(mpi_particle)*recv_count);
+            if(recv_count != 0) {
+                // Allocate buffer
+                recv_buffer = (pcord_t*)malloc(sizeof(mpi_particle)*recv_count);
 
-            // Receive elements from my_rank-1
-            MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &send_data_request);
-            MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
+                // Receive elements from my_rank-1
+                MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &send_data_request);
+                MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
+                ////cout << "my_rank = " << my_rank << " -> Has recieved particles from my_rank-1\n" << endl;
 
-            // Check whether receive particles and upgoing particles collide
-            pcord_t *particle, *other_particle;
-            size_t transfer_size = up_transfers.size();
-            vector<int> back_to_particles;
+                // Check whether receive particles and upgoing particles collide
+                pcord_t *particle, *other_particle;
+                size_t transfer_size = up_transfers.size();
+                vector<int> back_to_particles;
 
-            for (size_t i = 0; i < recv_count; i++) {
-                for (size_t j = 0; j < transfer_size; j++) {
+                for (size_t i = 0; i < recv_count; i++) {
+                    for (size_t j = 0; j < transfer_size; j++) {
 
-                    particle = &recv_buffer[i];
-                    other_particle = &up_transfers.at(j);
+                        particle = &recv_buffer[i];
+                        other_particle = &up_transfers.at(j);
 
-                    collision = collide(particle, other_particle);
-                    interact(particle, other_particle, collision);
+                        collision = collide(particle, other_particle);
+                        interact(particle, other_particle, collision);
 
-                    // Check if incomming particle should be sent back or kept
-                    if ( particle->y < my_cords.y0 ) {
-                        up_transfers.push_back(*particle);
-                    }
-                    else{
-                        pcord_t* p = new pcord_t();
-                        p->x = particle->x;
-                        p->y = particle->y;
-                        p->vx = particle->vx;
-                        p->vy = particle->vy;
-                        particles.push_back(p);
-                    }
-                    // Check if we should keep outgoing particle
-                    if (other_particle->y >= my_cords.y0) {
-                        back_to_particles.push_back(j);
+                        // Check if incomming particle should be sent back or kept
+                        if ( particle->y < my_cords.y0 ) {
+                            up_transfers.push_back(*particle);
+                        }
+                        else{
+                            pcord_t* p = new pcord_t();
+                            p->x = particle->x;
+                            p->y = particle->y;
+                            p->vx = particle->vx;
+                            p->vy = particle->vy;
+                            particles.push_back(p);
+                        }
+                        // Check if we should keep outgoing particle
+                        if (other_particle->y >= my_cords.y0) {
+                            back_to_particles.push_back(j);
+                        }
                     }
                 }
+
+                // Put back outgoing particles if they should be put back in particles
+                transfer_size = back_to_particles.size();
+                unsigned pos;
+
+                for (size_t i = 0; i < transfer_size; i++) {
+                    pos = back_to_particles.back();
+                    pcord_t* p = new pcord_t();
+                    p->x = recv_buffer[pos].x;
+                    p->y = recv_buffer[pos].y;
+                    p->vx = recv_buffer[pos].vx;
+                    p->vy = recv_buffer[pos].vy;
+                    particles.push_back(p);
+                    back_to_particles.pop_back();
+                }
+
+                // Free the receive buffer
+                free(recv_buffer);
             }
 
-            // Put back outgoing particles if they should be put back in particles
-            transfer_size = back_to_particles.size();
-            unsigned pos;
-
-            for (size_t i = 0; i < transfer_size; i++) {
-                pos = back_to_particles.back();
-                pcord_t* p = new pcord_t();
-                p->x = recv_buffer[pos].x;
-                p->y = recv_buffer[pos].y;
-                p->vx = recv_buffer[pos].vx;
-                p->vy = recv_buffer[pos].vy;
-                particles.push_back(p);
-                back_to_particles.pop_back();
-            }
-
-            // Free the receive buffer
-            free(recv_buffer);
             // Send particles to my_rank-1
             if (my_rank != n_tasks-1) { // First see that send_count is available for reuse
                 MPI_Wait(&send_count_request, MPI_STATUS_IGNORE);
-                MPI_Wait(&send_data_request, MPI_STATUS_IGNORE);
+                if(send_count != 0) {
+                    MPI_Wait(&send_data_request, MPI_STATUS_IGNORE);
+                }
             }
 
             send_count = up_transfers.size();
             MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &send_count_request);
-            MPI_Ibsend(&up_transfers.front(), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
+            if(send_count != 0) {
+                MPI_Ibsend(&up_transfers.front(), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
+            }
         }
 
 
@@ -186,40 +200,35 @@ int main(int argc, char** argv)
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
 
-            // Allocate recv buffer
-            recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
+            if(recv_count != 0) {
+                // Allocate recv buffer
+                recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
 
-            // Get the particles!
-            MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank+1, my_rank, com, &send_data_request);
-            MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
+                // Get the particles!
+                MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank+1, my_rank, com, &send_data_request);
+                MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
 
-            for (size_t i = 0; i < recv_count; i++) {
-                pcord_t* p = new pcord_t();
-                p->x = recv_buffer[i].x;
-                p->y = recv_buffer[i].y;
-                p->vx = recv_buffer[i].vx;
-                p->vy = recv_buffer[i].vy;
-                particles.push_back(p);
+                for (size_t i = 0; i < recv_count; i++) {
+                    pcord_t* p = new pcord_t();
+                    p->x = recv_buffer[i].x;
+                    p->y = recv_buffer[i].y;
+                    p->vx = recv_buffer[i].vx;
+                    p->vy = recv_buffer[i].vy;
+                    particles.push_back(p);
+                }
+
+                free(recv_buffer);
             }
-
-            free(recv_buffer);
         }
 
         // Wait for send stuff to get free for next run.
         MPI_Wait(&send_count_request, MPI_STATUS_IGNORE);
-        MPI_Wait(&send_data_request, MPI_STATUS_IGNORE);
+        if(send_count != 0) {
+            MPI_Wait(&send_data_request, MPI_STATUS_IGNORE);
+        }
     }
 
-
-
-
-
-    // for all particles do
-    // Check for collisions.
-    // Move particles that has not collided with another.
-    // Check for wall interaction and add the momentum.
-    // Communicate if needed.
-    // Calculate pressure.
+    // TODO: Reduction and calculate pressure.
 
     MPI_Finalize();
     return 0;
