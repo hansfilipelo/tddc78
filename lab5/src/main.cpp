@@ -79,13 +79,13 @@ int main(int argc, char** argv)
                     collision = collide(particle, other_particle);
 
                     if (collision == -1) {
-                        interact(particle, other_particle, collision);
-                        last_pos--;
-                        tmp_particles.push_back(other_particle);
-                        swap(particles.at(j), particles.back());
+                        feuler(particle, STEP_SIZE);
                     }
                     else{
-                        feuler(particle, STEP_SIZE);
+                        interact(particle, other_particle, collision);
+                        tmp_particles.push_back(other_particle);
+                        swap(other_particle, particles.at(last_pos));
+                        last_pos--;
                     }
                 }
 
