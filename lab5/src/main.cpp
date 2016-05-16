@@ -181,25 +181,45 @@ int main(int argc, char** argv)
 
                         collision = collide(particle, other_particle);
 
-                        if (collision == -1) {
+                        if (collision != -1) {
+                            interact(particle, other_particle, collision);
 
+                            total_momentum += wall_collide(particle,box);
+                            total_momentum += wall_collide(other_particle,box);
+
+                            if ( other_particle->y > my_cords.y0 && other_particle->y < my_cords.y1 ) {
+                                particles.push_back(Utils::copy_particle(*other_particle));
+                                Utils::pcord_swap(other_particle, &up_transfers.at(last_pos));
+                                up_transfers.erase(up_transfers.begin()+last_pos);
+                            }
+                            else {
+                                Utils::pcord_swap(other_particle, &up_transfers.at(last_pos));
+                            }
+                            last_pos--;
+
+                            if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ){
+                                particles.push_back(Utils::copy_particle(*particle));
+                            }
+                            else{
+                                up_transfers.push_back(*particle);
+                            }
+
+                            has_collision = true;
+                            break;
                         }
+                    } // End of loop with iterator j
+
+                    if (has_collision == false) {
+                        feuler(particle, STEP_SIZE);
+                        total_momentum += wall_collide(particle,box);
+                        particles.push_back(Utils::copy_particle(*particle));
                     }
-                }
+                } // End of loop with iterator i
 
-                // Put back outgoing particles if they should be put back in particles
-                transfer_size = back_to_particles.size();
-                unsigned pos;
-
-                for (size_t i = 0; i < transfer_size; i++) {
-                    pos = back_to_particles.back();
-                    pcord_t* p = new pcord_t();
-                    p->x = recv_buffer[pos].x;
-                    p->y = recv_buffer[pos].y;
-                    p->vx = recv_buffer[pos].vx;
-                    p->vy = recv_buffer[pos].vy;
-                    particles.push_back(p);
-                    back_to_particles.pop_back();
+                for (size_t i = 0; i < last_pos; i++) {
+                    particle = &up_transfers.at(i);
+                    feuler(particle, STEP_SIZE);
+                    total_momentum += wall_collide(particle, box);
                 }
 
                 // Free the receive buffer
@@ -238,12 +258,7 @@ int main(int argc, char** argv)
                 MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
 
                 for (size_t i = 0; i < recv_count; i++) {
-                    pcord_t* p = new pcord_t();
-                    p->x = recv_buffer[i].x;
-                    p->y = recv_buffer[i].y;
-                    p->vx = recv_buffer[i].vx;
-                    p->vy = recv_buffer[i].vy;
-                    particles.push_back(p);
+                    particles.push_back(Utils::copy_particle(recv_buffer[i]));
                 }
 
                 free(recv_buffer);
