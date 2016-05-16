@@ -69,9 +69,12 @@ int main(int argc, char** argv)
         pcord_t* particle;
         pcord_t* other_particle;
         size_t last_pos = particles.size()-1;
+        bool has_collision = false;
 
         if (particles.size() > 0){
             for (size_t i = 0; i < last_pos; i++) {
+                has_collision = false;
+
                 particle = particles.at(i);
                 for (size_t j = i+1; j < last_pos+1; j++) {
 
@@ -79,44 +82,57 @@ int main(int argc, char** argv)
                     collision = collide(particle, other_particle);
 
                     if (collision == -1) {
-                        feuler(particle, STEP_SIZE);
+                        continue;
                     }
                     else{
                         interact(particle, other_particle, collision);
+
+                        total_momentum += wall_collide(particle,box);
+                        total_momentum += wall_collide(other_particle,box);
+
                         tmp_particles.push_back(other_particle);
+                        tmp_particles.push_back(particle);
+
                         swap(other_particle, particles.at(last_pos));
                         last_pos--;
+                        has_collision = true;
+                        break;
+                    }
+                } // End loop with iterator j
+
+                if (has_collision == false) {
+                    if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ) {
+                        feuler(particle, STEP_SIZE);
+                        tmp_particles.push_back(particle);
+                        total_momentum += wall_collide(particle,box);
+                    }
+                    else if ( particle->y < my_cords.y0 ){
+                        up_transfers.push_back(*particle);
+                        pos_to_erase.push_back(i);
+                    }
+                    else{
+                        down_transfers.push_back(*particle);
+                        pos_to_erase.push_back(i);
                     }
                 }
+            } // End loop with iterator i
 
-                total_momentum += wall_collide(particle,box);
-
-                if ( particle->y < my_cords.y0 ) {
-                    up_transfers.push_back(*particle);
-                    pos_to_erase.push_back(i);
+            // Check last particle as well. It can not collide with anything.
+            particle = particles.at(last_pos);
+            if (has_collision == false) {
+                if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ) {
+                    feuler(particle, STEP_SIZE);
+                    tmp_particles.push_back(particle);
+                    total_momentum += wall_collide(particle,box);
                 }
-                else if ( particle->y > my_cords.y1 ){
-                    down_transfers.push_back(*particle);
-                    pos_to_erase.push_back(i);
+                else if ( particle->y < my_cords.y0 ){
+                    up_transfers.push_back(*particle);
+                    pos_to_erase.push_back(last_pos);
                 }
                 else{
-                    tmp_particles.push_back(particle);
+                    down_transfers.push_back(*particle);
+                    pos_to_erase.push_back(last_pos);
                 }
-            }
-
-            particle = particles.at(last_pos);
-            total_momentum += wall_collide(particle,box);
-
-            if ( particle->y < my_cords.y0 ) {
-                up_transfers.push_back(*particle);
-                pos_to_erase.push_back(last_pos);
-            }
-            else if ( particle->y > my_cords.y1 ){
-                down_transfers.push_back(*particle);
-                pos_to_erase.push_back(last_pos);
-            }
-            else{
-                tmp_particles.push_back(particle);
             }
 
             // Free memory
@@ -153,33 +169,20 @@ int main(int argc, char** argv)
 
                 // Check whether receive particles and upgoing particles collide
                 pcord_t *particle, *other_particle;
-                size_t transfer_size = up_transfers.size();
+                size_t transfer_size;
                 vector<int> back_to_particles;
+                last_pos = up_transfers.size();
 
                 for (size_t i = 0; i < recv_count; i++) {
-                    for (size_t j = 0; j < transfer_size; j++) {
+                    for (size_t j = 0; j < last_pos; j++) {
 
                         particle = &recv_buffer[i];
                         other_particle = &up_transfers.at(j);
 
                         collision = collide(particle, other_particle);
-                        interact(particle, other_particle, collision);
 
-                        // Check if incomming particle should be sent back or kept
-                        if ( particle->y < my_cords.y0 ) {
-                            up_transfers.push_back(*particle);
-                        }
-                        else{
-                            pcord_t* p = new pcord_t();
-                            p->x = particle->x;
-                            p->y = particle->y;
-                            p->vx = particle->vx;
-                            p->vy = particle->vy;
-                            particles.push_back(p);
-                        }
-                        // Check if we should keep outgoing particle
-                        if (other_particle->y >= my_cords.y0) {
-                            back_to_particles.push_back(j);
+                        if (collision == -1) {
+
                         }
                     }
                 }
