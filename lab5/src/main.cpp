@@ -59,47 +59,62 @@ int main(int argc, char** argv)
     vector<pcord_t> up_transfers;
     vector<pcord_t> down_transfers;
 
+    vector<int> pos_to_erase;
+
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
 
         // Check for collisions.
         // Move particles that has not collided with another.
         // Check for wall interaction and add the momentum.
         // Check if particles need to be communicated
-        for (vector<pcord_t*>::iterator particle = particles.begin(); particle != particles.end()-1; ++particle) {
+        pcord_t* particle;
+        pcord_t* other_particle;
+        size_t last_pos = particles.size()-1;
 
-            for (vector<pcord_t*>::iterator other_particle = particle+1; other_particle != particles.end(); ++other_particle) {
-
-                collision = collide(*particle, *other_particle);
-                interact(*particle, *other_particle, collision);
+        for (size_t i = 0; i < last_pos; i++) {
+            particle = particles.at(i);
+            for (size_t j = i+1; j < last_pos+1; j++) {
+                other_particle = particles.at(j);
+                collision = collide(particle, other_particle);
+                interact(particle, other_particle, collision);
             }
 
-            total_momentum += wall_collide(*particle,box);
+            total_momentum += wall_collide(particle,box);
 
-            if ( (*particle)->y < my_cords.y0 ) {
-                up_transfers.push_back(**particle);
-                delete *particle; // TODO: destroys iterator as it is now
+            if ( particle->y < my_cords.y0 ) {
+                up_transfers.push_back(*particle);
+                pos_to_erase.push_back(i);
             }
-            else if ( (*particle)->y > my_cords.y1 ){
-                down_transfers.push_back(**particle);
-                delete *particle; // TODO: destroys iterator as it is now
+            else if ( particle->y > my_cords.y1 ){
+                down_transfers.push_back(*particle);
+                pos_to_erase.push_back(i);
             }
             else{
-                tmp_particles.push_back(*particle);
+                tmp_particles.push_back(particle);
             }
         }
 
-        total_momentum += wall_collide(*(particles.end()-1),box);
+        particle = particles.at(last_pos);
+        total_momentum += wall_collide(particle,box);
 
-        if ( (*(particles.end()-1))->y < my_cords.y0 ) {
-            up_transfers.push_back(**(particles.end()-1));
+        if ( particle->y < my_cords.y0 ) {
+            up_transfers.push_back(*particle);
+            pos_to_erase.push_back(last_pos);
         }
-        else if ( (*(particles.end()-1))->y > my_cords.y1 ){
-            down_transfers.push_back(**(particles.end()-1));
+        else if ( particle->y > my_cords.y1 ){
+            down_transfers.push_back(*particle);
+            pos_to_erase.push_back(last_pos);
         }
         else{
-            tmp_particles.push_back(*(particles.end()-1));
+            tmp_particles.push_back(particle);
         }
 
+        // Free memory
+        size_t pos_to_erase_size = pos_to_erase.size();
+        for (size_t i = 0; i < pos_to_erase_size; i++) {
+            delete particles.at(pos_to_erase.back());
+            pos_to_erase.pop_back();
+        }
         particles.erase(particles.begin(), particles.end());
         particles.swap(tmp_particles);
 
