@@ -228,7 +228,16 @@ int main(int argc, char** argv)
         }
     }
 
-    // TODO: Reduction and calculate pressure.
+    // Reduction and calculate pressure.
+    total_momentum = total_momentum/(_SIMULATION_STEPS_ * STEP_SIZE);
+
+    if(my_rank == 0) {
+        MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
+        cout << "Pressure = " << total_momentum << endl;
+    }
+    else {
+        MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
+    }
 
     MPI_Finalize();
     return 0;
