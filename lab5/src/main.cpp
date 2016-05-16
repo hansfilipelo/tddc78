@@ -121,7 +121,7 @@ int main(int argc, char** argv)
         // Send particles who should change processing element
         if (my_rank != n_tasks-1) {
             send_count = down_transfers.size();
-            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &send_count_request);
+            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &send_count_request);
 
             if(send_count != 0) {
                 MPI_Ibsend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 
         if ( my_rank != 0) {
             // Receive the nr of elements to get from processor my_rank-1
-            MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &receive_count_request);
+            MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
 
             if(recv_count != 0) {
@@ -202,7 +202,7 @@ int main(int argc, char** argv)
             }
 
             send_count = up_transfers.size();
-            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &send_count_request);
+            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
             if(send_count != 0) {
                 MPI_Ibsend(&up_transfers.at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
             }
@@ -212,7 +212,7 @@ int main(int argc, char** argv)
         // Receive particles from my_rank+1
         if (my_rank != n_tasks-1) {
             // Receive the nr of elements to get from processor my_rank+1
-            MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &receive_count_request);
+            MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
 
             if(recv_count != 0) {
