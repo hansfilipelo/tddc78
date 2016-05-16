@@ -1,5 +1,6 @@
 #ifndef _MPI_DATA_TYPES_H_
 #define _MPI_DATA_TYPES_H_
+
 #include <mpi.h>
 #include "definitions.hpp"
 

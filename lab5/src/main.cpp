@@ -9,13 +9,21 @@ int main(int argc, char** argv)
     // Init mpi
     int n_tasks, my_rank;
     MPI_Datatype mpi_particle;
-    pcord_t mpi_p;
+    pcord_t* mpi_p;
+
+    MPI_Request send_count_request;
+    MPI_Request send_data_request;
+    MPI_Request receive_data_request;
+    MPI_Request receive_count_request;
+    unsigned recv_count;
+    int send_count;
+    pcord_t* recv_buffer;
 
     MPI_Comm com = MPI_COMM_WORLD;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(com, &n_tasks);
     MPI_Comm_rank(com, &my_rank);
-    create_mpi_particle_t(&mpi_p, &mpi_particle);
+    create_mpi_particle_t(mpi_p, &mpi_particle);
 
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
@@ -85,9 +93,31 @@ int main(int argc, char** argv)
             tmp_particles.push_back(*(particles.end()-1));
         }
 
-        
+
         particles.erase(particles.begin(), particles.end());
         particles.swap(tmp_particles);
+
+        // Send particles who should change processing element
+        if (my_rank != n_tasks-1) {
+            send_count = down_transfers.size();
+            MPI_Ibsend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*my_rank+1, com, &send_count_request);
+            MPI_Ibsend(&down_transfers.front(), down_transfers.size(), mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+        }
+
+        if ( my_rank != 0) {
+            // Receive the nr of elements to get from processor my_rank-1
+            MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank-1, com, &receive_count_request);
+            MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
+
+            // Allocate buffer
+            recv_buffer = (pcord_t*)malloc(sizeof(mpi_particle)*recv_count);
+
+            // Receive elements from my_rank-1
+            MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &send_data_request);
+            MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
+            
+        }
+
     }
 
 
