@@ -6,9 +6,6 @@ int main(int argc, char** argv)
 {
     // Init mpi
     int n_tasks, my_rank;
-    MPI_Datatype mpi_particle;
-    pcord_t* mpi_p;
-
     MPI_Request send_count_request;
     MPI_Request send_data_request;
     MPI_Request receive_data_request;
@@ -21,6 +18,10 @@ int main(int argc, char** argv)
     MPI_Init(&argc, &argv);
     MPI_Comm_size(com, &n_tasks);
     MPI_Comm_rank(com, &my_rank);
+
+    // Create mpi data type for particle
+    MPI_Datatype mpi_particle;
+    pcord_t* mpi_p;
     create_mpi_particle_t(mpi_p, &mpi_particle);
 
     // Init random nr generator
