@@ -43,15 +43,9 @@ int main(int argc, char** argv)
 
     // Initiate particles
     for (size_t i = 0; i < INIT_NO_PARTICLES; i++) {
-        pcord_t* p = new pcord_t();
-        p->x = Utils::generate_random_float(my_cords.x0, my_cords.x1);
-        p->y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
-        p->vx = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
-        p->vy = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
-        particles.push_back(p);
+        particles.push_back(Utils::init_particle(my_cords));
     }
 
-    // Main loop: for each time-step do
     float total_momentum = 0;
     float collision;
 
@@ -59,8 +53,10 @@ int main(int argc, char** argv)
     vector<pcord_t> up_transfers;
     vector<pcord_t> down_transfers;
 
+    // Temporary storage for positions to erase
     vector<int> pos_to_erase;
 
+    // Main loop: for each time-step do
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
         // Check for collisions.
         // Move particles that has not collided with another.
