@@ -28,8 +28,8 @@ int main(int argc, char** argv)
 
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
-    vector<pcord_t*> particles;
-    vector<pcord_t*> tmp_particles;
+    vector<pcord_t>* particles = new vector<pcord_t>();
+    vector<pcord_t>* tmp_particles = new vector<pcord_t>();
     float vert_stop;
 
     if ( my_rank != n_tasks-1 ) {
@@ -43,18 +43,15 @@ int main(int argc, char** argv)
 
     // Initiate particles
     for (size_t i = 0; i < INIT_NO_PARTICLES; i++) {
-        particles.push_back(Utils::init_particle(my_cords));
+        particles->push_back(Utils::init_particle(my_cords));
     }
 
     float total_momentum = 0;
     float collision;
 
     // Temporary storage for transfers
-    vector<pcord_t> up_transfers;
-    vector<pcord_t> down_transfers;
-
-    // Temporary storage for positions to erase
-    vector<int> pos_to_erase;
+    vector<pcord_t>* up_transfers = new vector<pcord_t>();
+    vector<pcord_t>* down_transfers = new vector<pcord_t>();
 
     // Main loop: for each time-step do
     for (size_t t = 0; t < _SIMULATION_STEPS_; t++) {
@@ -64,17 +61,17 @@ int main(int argc, char** argv)
         // Check if particles need to be communicated
         pcord_t* particle;
         pcord_t* other_particle;
-        size_t last_pos = particles.size()-1;
+        size_t last_pos = particles->size()-1;
         bool has_collision = false;
 
-        if (particles.size() > 0){
+        if (particles->size() > 0){
             for (size_t i = 0; i < last_pos; i++) {
                 has_collision = false;
+                particle = &particles->at(i);
 
-                particle = particles.at(i);
                 for (size_t j = i+1; j < last_pos+1; j++) {
 
-                    other_particle = particles.at(j);
+                    other_particle = &particles->at(j);
                     collision = collide(particle, other_particle);
 
                     if (collision == -1) {
@@ -86,10 +83,10 @@ int main(int argc, char** argv)
                         total_momentum += wall_collide(particle,box);
                         total_momentum += wall_collide(other_particle,box);
 
-                        tmp_particles.push_back(other_particle);
-                        tmp_particles.push_back(particle);
+                        tmp_particles->push_back(*other_particle);
+                        tmp_particles->push_back(*particle);
 
-                        swap(other_particle, particles.at(last_pos));
+                        Utils::pcord_swap(other_particle, &particles->at(last_pos));
                         last_pos--;
                         has_collision = true;
                         break;
@@ -99,58 +96,49 @@ int main(int argc, char** argv)
                 if (has_collision == false) {
                     if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ) {
                         feuler(particle, STEP_SIZE);
-                        tmp_particles.push_back(particle);
+                        tmp_particles->push_back(*particle);
                         total_momentum += wall_collide(particle,box);
                     }
                     else if ( particle->y < my_cords.y0 ){
-                        up_transfers.push_back(*particle);
-                        pos_to_erase.push_back(i);
+                        up_transfers->push_back(*particle);
                     }
                     else{
-                        down_transfers.push_back(*particle);
-                        pos_to_erase.push_back(i);
+                        down_transfers->push_back(*particle);
                     }
                 }
             } // End loop with iterator i
 
             // Check last particle as well. It can not collide with anything.
-            particle = particles.at(last_pos);
+            particle = &particles->at(last_pos);
             if (has_collision == false) {
                 if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ) {
                     feuler(particle, STEP_SIZE);
-                    tmp_particles.push_back(particle);
+                    tmp_particles->push_back(*particle);
                     total_momentum += wall_collide(particle,box);
                 }
                 else if ( particle->y < my_cords.y0 ){
-                    up_transfers.push_back(*particle);
-                    pos_to_erase.push_back(last_pos);
+                    up_transfers->push_back(*particle);
                 }
                 else{
-                    down_transfers.push_back(*particle);
-                    pos_to_erase.push_back(last_pos);
+                    down_transfers->push_back(*particle);
                 }
             }
 
-            // Free memory
-            size_t pos_to_erase_size = pos_to_erase.size();
-
-            for (size_t i = 0; i < pos_to_erase_size; i++) {
-                delete particles.at(pos_to_erase.back());
-                pos_to_erase.pop_back();
-            }
-            particles.erase(particles.begin(), particles.end());
-            particles.swap(tmp_particles);
+            particles->clear();
+            particles->swap(*tmp_particles);
         }
 
         // Send particles who should change processing element
         if (my_rank != n_tasks-1) {
-            send_count = down_transfers.size();
+            send_count = down_transfers->size();
+
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &send_count_request);
 
             if(send_count != 0) {
-                MPI_Isend(&down_transfers.at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
+                MPI_Isend(&down_transfers->at(0), send_count, mpi_particle, my_rank+1, my_rank+1, com, &send_data_request);
             }
         }
+
         if ( my_rank != 0) {
             // Receive the nr of elements to get from processor my_rank-1
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &receive_count_request);
@@ -166,14 +154,14 @@ int main(int argc, char** argv)
                 // Check whether receive particles and upgoing particles collide
                 pcord_t *particle, *other_particle;
                 size_t transfer_size;
-                vector<int> back_to_particles;
-                last_pos = up_transfers.size() - 1;
+
+                last_pos = up_transfers->size() - 1;
 
                 for (size_t i = 0; i < recv_count; i++) {
                     particle = &recv_buffer[i];
 
                     for (size_t j = 0; j < last_pos+1; j++) {
-                        other_particle = &up_transfers.at(j);
+                        other_particle = &up_transfers->at(j);
 
                         collision = collide(particle, other_particle);
 
@@ -184,20 +172,20 @@ int main(int argc, char** argv)
                             total_momentum += wall_collide(other_particle,box);
 
                             if ( other_particle->y > my_cords.y0 && other_particle->y < my_cords.y1 ) {
-                                particles.push_back(Utils::copy_particle(*other_particle));
-                                Utils::pcord_swap(other_particle, &up_transfers.at(last_pos));
-                                up_transfers.erase(up_transfers.begin()+last_pos);
+                                particles->push_back(*other_particle);
+                                Utils::pcord_swap(other_particle, &up_transfers->at(last_pos));
+                                up_transfers->erase(up_transfers->begin()+last_pos);
                             }
                             else {
-                                Utils::pcord_swap(other_particle, &up_transfers.at(last_pos));
+                                Utils::pcord_swap(other_particle, &up_transfers->at(last_pos));
                             }
                             last_pos--;
 
                             if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ){
-                                particles.push_back(Utils::copy_particle(*particle));
+                                particles->push_back(*particle);
                             }
                             else{
-                                up_transfers.push_back(*particle);
+                                up_transfers->push_back(*particle);
                             }
 
                             has_collision = true;
@@ -208,12 +196,12 @@ int main(int argc, char** argv)
                     if (has_collision == false) {
                         feuler(particle, STEP_SIZE);
                         total_momentum += wall_collide(particle,box);
-                        particles.push_back(Utils::copy_particle(*particle));
+                        particles->push_back(*particle);
                     }
                 } // End of loop with iterator i
 
                 for (size_t i = 0; i < last_pos+1; i++) {
-                    particle = &up_transfers.at(i);
+                    particle = &up_transfers->at(i);
                     feuler(particle, STEP_SIZE);
                     total_momentum += wall_collide(particle, box);
                 }
@@ -221,7 +209,6 @@ int main(int argc, char** argv)
                 // Free the receive buffer
                 free(recv_buffer);
             }
-
 
             // Wait for send to finish if not finished
             if (my_rank != n_tasks-1) { // First see that send_count is available for reuse
@@ -231,13 +218,13 @@ int main(int argc, char** argv)
                 }
             }
 
-            send_count = up_transfers.size();
+            send_count = up_transfers->size();
+            cout << "send_count: " << send_count << endl;
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
             if(send_count != 0) {
-                MPI_Isend(&up_transfers.at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
+                MPI_Isend(&up_transfers->at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
             }
         }
-
 
         // Receive particles from my_rank+1
         if (my_rank != n_tasks-1) {
@@ -245,6 +232,7 @@ int main(int argc, char** argv)
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
 
+            cout << "recv_count: " << recv_count << endl;
             if(recv_count != 0) {
                 // Allocate recv buffer
                 recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
@@ -254,7 +242,7 @@ int main(int argc, char** argv)
                 MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
 
                 for (size_t i = 0; i < recv_count; i++) {
-                    particles.push_back(Utils::copy_particle(recv_buffer[i]));
+                    particles->push_back(recv_buffer[i]);
                 }
                 free(recv_buffer);
             }
@@ -265,8 +253,8 @@ int main(int argc, char** argv)
         if(send_count != 0) {
             MPI_Wait(&send_data_request, MPI_STATUS_IGNORE);
         }
-        up_transfers.clear();
-        down_transfers.clear();
+        up_transfers->clear();
+        down_transfers->clear();
     }
 
     // Reduction and calculate pressure.

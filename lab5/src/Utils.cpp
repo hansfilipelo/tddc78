@@ -15,24 +15,13 @@ float Utils::generate_random_float(float from, float to)
     return from + r;
 }
 
-pcord_t* Utils::copy_particle(pcord_t particle)
+pcord_t Utils::init_particle(cord_t my_cords)
 {
-    pcord_t* p = new pcord_t();
-    p->x = particle.x;
-    p->y = particle.y;
-    p->vx = particle.vx;
-    p->vy = particle.vy;
-
-    return p;
-}
-
-pcord_t* Utils::init_particle(cord_t my_cords)
-{
-    pcord_t* p = new pcord_t();
-    p->x = Utils::generate_random_float(my_cords.x0, my_cords.x1);
-    p->y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
-    p->vx = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
-    p->vy = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
+    pcord_t p;
+    p.x = Utils::generate_random_float(my_cords.x0, my_cords.x1);
+    p.y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
+    p.vx = Utils::generate_random_float(- MAX_INITIAL_VELOCITY, MAX_INITIAL_VELOCITY);
+    p.vy = Utils::generate_random_float(- MAX_INITIAL_VELOCITY, MAX_INITIAL_VELOCITY);
 
     return p;
 }
@@ -40,6 +29,7 @@ pcord_t* Utils::init_particle(cord_t my_cords)
 void Utils::pcord_swap(pcord_t* p1, pcord_t* p2)
 {
     pcord_t tmp;
+
     tmp.x = p1->x;
     tmp.y = p1->y;
     tmp.vx = p1->vx;
