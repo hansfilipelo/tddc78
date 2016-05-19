@@ -6,9 +6,6 @@ int main(int argc, char** argv)
 {
     // Init mpi
     int n_tasks, my_rank;
-    MPI_Datatype mpi_particle;
-    pcord_t* mpi_p;
-
     MPI_Request send_count_request;
     MPI_Request send_data_request;
     MPI_Request receive_data_request;
@@ -21,6 +18,10 @@ int main(int argc, char** argv)
     MPI_Init(&argc, &argv);
     MPI_Comm_size(com, &n_tasks);
     MPI_Comm_rank(com, &my_rank);
+
+    // Create mpi data type for particle
+    MPI_Datatype mpi_particle;
+    pcord_t* mpi_p;
     create_mpi_particle_t(mpi_p, &mpi_particle);
 
     // Init random nr generator
@@ -219,7 +220,6 @@ int main(int argc, char** argv)
             }
 
             send_count = up_transfers->size();
-            cout << "send_count: " << send_count << endl;
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
             if(send_count != 0) {
                 MPI_Isend(&up_transfers->at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
@@ -232,7 +232,6 @@ int main(int argc, char** argv)
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
 
-            cout << "recv_count: " << recv_count << endl;
             if(recv_count != 0) {
                 // Allocate recv buffer
                 recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
