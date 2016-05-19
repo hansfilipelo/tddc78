@@ -137,6 +137,7 @@ int main(int argc, char** argv)
 
             // Free memory
             size_t pos_to_erase_size = pos_to_erase.size();
+
             for (size_t i = 0; i < pos_to_erase_size; i++) {
                 delete particles.at(pos_to_erase.back());
                 pos_to_erase.pop_back();
@@ -166,17 +167,16 @@ int main(int argc, char** argv)
                 // Receive elements from my_rank-1
                 MPI_Irecv(recv_buffer, recv_count, mpi_particle, my_rank-1, my_rank, com, &receive_data_request);
                 MPI_Wait(&receive_data_request, MPI_STATUS_IGNORE);
-
                 // Check whether receive particles and upgoing particles collide
                 pcord_t *particle, *other_particle;
                 size_t transfer_size;
                 vector<int> back_to_particles;
-                last_pos = up_transfers.size();
+                last_pos = up_transfers.size() - 1;
 
                 for (size_t i = 0; i < recv_count; i++) {
-                    for (size_t j = 0; j < last_pos; j++) {
+                    particle = &recv_buffer[i];
 
-                        particle = &recv_buffer[i];
+                    for (size_t j = 0; j < last_pos+1; j++) {
                         other_particle = &up_transfers.at(j);
 
                         collision = collide(particle, other_particle);
@@ -216,7 +216,7 @@ int main(int argc, char** argv)
                     }
                 } // End of loop with iterator i
 
-                for (size_t i = 0; i < last_pos; i++) {
+                for (size_t i = 0; i < last_pos+1; i++) {
                     particle = &up_transfers.at(i);
                     feuler(particle, STEP_SIZE);
                     total_momentum += wall_collide(particle, box);
@@ -260,7 +260,6 @@ int main(int argc, char** argv)
                 for (size_t i = 0; i < recv_count; i++) {
                     particles.push_back(Utils::copy_particle(recv_buffer[i]));
                 }
-
                 free(recv_buffer);
             }
         }

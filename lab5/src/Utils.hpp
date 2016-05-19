@@ -1,5 +1,6 @@
 #include <ctime>
 #include <cstdlib>
+#include <iostream>
 #include "coordinate.hpp"
 
 class Utils
