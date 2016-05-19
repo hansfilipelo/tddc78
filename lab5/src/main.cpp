@@ -219,7 +219,6 @@ int main(int argc, char** argv)
             }
 
             send_count = up_transfers->size();
-            cout << "send_count: " << send_count << endl;
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
             if(send_count != 0) {
                 MPI_Isend(&up_transfers->at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
@@ -232,7 +231,6 @@ int main(int argc, char** argv)
             MPI_Irecv(&recv_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &receive_count_request);
             MPI_Wait(&receive_count_request, MPI_STATUS_IGNORE);
 
-            cout << "recv_count: " << recv_count << endl;
             if(recv_count != 0) {
                 // Allocate recv buffer
                 recv_buffer = (pcord_t*)malloc(sizeof(pcord_t)*recv_count);
@@ -255,10 +253,14 @@ int main(int argc, char** argv)
         }
         up_transfers->clear();
         down_transfers->clear();
+
+        if (my_rank == 0) {
+            cout << "Status: " << (t/(float)_SIMULATION_STEPS_)*100.f << "%" << endl;
+        }
     }
 
     // Reduction and calculate pressure.
-    total_momentum = total_momentum/(_SIMULATION_STEPS_ * STEP_SIZE);
+    total_momentum = total_momentum/(_SIMULATION_STEPS_ * STEP_SIZE * 2*(BOX_VERT_SIZE+BOX_HORIZ_SIZE));
 
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
