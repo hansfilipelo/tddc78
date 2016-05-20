@@ -18,10 +18,15 @@ float Utils::generate_random_float(float from, float to)
 pcord_t Utils::init_particle(cord_t my_cords)
 {
     pcord_t p;
+    float r, theta;
+
+    r = Utils::generate_random_float(0, MAX_INITIAL_VELOCITY);
+    theta = Utils::generate_random_float(0, 2*PI);
+
     p.x = Utils::generate_random_float(my_cords.x0, my_cords.x1);
     p.y = Utils::generate_random_float(my_cords.y0, my_cords.y1);
-    p.vx = Utils::generate_random_float(- MAX_INITIAL_VELOCITY, MAX_INITIAL_VELOCITY);
-    p.vy = Utils::generate_random_float(- MAX_INITIAL_VELOCITY, MAX_INITIAL_VELOCITY);
+    p.vx = r*cos(theta);
+    p.vy = r*sin(theta);
 
     return p;
 }
