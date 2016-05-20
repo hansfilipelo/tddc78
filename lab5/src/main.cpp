@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 
     // Init random nr generator
     Utils::init(my_rank);
+    double kin_energy = 0;
 
     // Initiate walls for box as well as split box into sub-areas
     const cord_t box = {0, BOX_HORIZ_SIZE, 0, BOX_VERT_SIZE};
@@ -44,8 +45,11 @@ int main(int argc, char** argv)
 
     // Initiate particles
     for (size_t i = 0; i < INIT_NO_PARTICLES; i++) {
-        particles->push_back(Utils::init_particle(my_cords));
+        pcord_t particle = Utils::init_particle(my_cords);
+        kin_energy += pow(particle.vx, 2) + pow(particle.vy,2);
+        particles->push_back(particle);
     }
+    cout << "Kin energy: " << kin_energy << endl;
 
     float total_momentum = 0;
     float collision;
@@ -271,12 +275,14 @@ int main(int argc, char** argv)
 
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
-        int RT = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/(n_tasks*INIT_NO_PARTICLES);
+        MPI_Reduce(MPI_IN_PLACE, &kin_energy, 1, MPI_DOUBLE, MPI_SUM, 0, com);
+        int Rn = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/(kin_energy);
         cout << "Pressure = " << total_momentum << endl;
-        cout << "RT: " << RT << endl;
+        cout << "Rn: " << Rn << endl;
     }
     else {
         MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
+        MPI_Reduce(&kin_energy, &kin_energy, 1, MPI_DOUBLE, MPI_SUM, 0, com);
     }
 
     MPI_Finalize();
