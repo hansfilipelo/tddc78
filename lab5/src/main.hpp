@@ -1,5 +1,5 @@
+
 #include <vector>
-#include <mpi.h>
 #include <utility>
 
 #include "definitions.hpp"
