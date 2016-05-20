@@ -7,6 +7,8 @@ void Utils::init(int my_rank)
     srand(time(0)+my_rank);
 }
 
+// -----------------
+
 float Utils::generate_random_float(float from, float to)
 {
     float random = ((float) rand()) / (float) RAND_MAX;
@@ -14,6 +16,8 @@ float Utils::generate_random_float(float from, float to)
     float r = random * diff;
     return from + r;
 }
+
+// -----------------
 
 pcord_t Utils::init_particle(cord_t my_cords)
 {
@@ -30,6 +34,8 @@ pcord_t Utils::init_particle(cord_t my_cords)
 
     return p;
 }
+
+// -----------------
 
 void Utils::pcord_swap(pcord_t* p1, pcord_t* p2)
 {
@@ -49,4 +55,15 @@ void Utils::pcord_swap(pcord_t* p1, pcord_t* p2)
     p2->y = tmp.y;
     p2->vx = tmp.vx;
     p2->vy = tmp.vy;
+}
+
+// -----------------
+
+bool Utils::will_pass_edge(pcord_t* particle, float edge, bool transfer)
+{
+    if (transfer == UP) {
+        return particle->y+particle->vy*STEP_SIZE < edge;
+    }
+
+    return particle->y+particle->vy*STEP_SIZE > edge;
 }

@@ -95,12 +95,15 @@ int main(int argc, char** argv)
                 } // End loop with iterator j
 
                 if (has_collision == false) {
-                    if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ) {
+                    bool going_up;
+                    bool going_down;
+
+                    if ( !(going_up = Utils::will_pass_edge(particle, my_cords.y0, UP)) && !(going_down = Utils::will_pass_edge(particle, my_cords.y1, DOWN)) ) {
                         feuler(particle, STEP_SIZE);
                         tmp_particles->push_back(*particle);
                         total_momentum += wall_collide(particle,box);
                     }
-                    else if ( particle->y < my_cords.y0 ){
+                    else if ( going_up ){
                         up_transfers->push_back(*particle);
                     }
                     else{
@@ -112,12 +115,15 @@ int main(int argc, char** argv)
             // Check last particle as well. It can not collide with anything.
             particle = &particles->at(last_pos);
             if (has_collision == false) {
-                if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ) {
+                bool going_up;
+                bool going_down;
+
+                if ( !(going_up = Utils::will_pass_edge(particle, my_cords.y0, UP)) && !(going_down = Utils::will_pass_edge(particle, my_cords.y1, DOWN)) ) {
                     feuler(particle, STEP_SIZE);
                     tmp_particles->push_back(*particle);
                     total_momentum += wall_collide(particle,box);
                 }
-                else if ( particle->y < my_cords.y0 ){
+                else if ( going_up ){
                     up_transfers->push_back(*particle);
                 }
                 else{
