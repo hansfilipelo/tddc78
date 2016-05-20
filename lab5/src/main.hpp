@@ -1,6 +1,7 @@
 
 #include <vector>
 #include <utility>
+#include <cassert>
 
 #include "definitions.hpp"
 #include "coordinate.hpp"

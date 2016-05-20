@@ -22,8 +22,8 @@ endif
 
 ifeq ($(HOSTNAME), triolith1)
 	CC = mpiicpc
-	INC += 
-	LDFLAGS += 
+	INC +=
+	LDFLAGS +=
 endif
 
 # END triolith

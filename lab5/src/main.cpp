@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     // Initiate particles
     for (size_t i = 0; i < INIT_NO_PARTICLES; i++) {
         pcord_t particle = Utils::init_particle(my_cords);
-        kin_energy += pow(particle.vx, 2) + pow(particle.vy,2);
+        kin_energy += (pow(particle.vx, 2) + pow(particle.vy,2))/2;
         particles->push_back(particle);
     }
     cout << "Kin energy: " << kin_energy << endl;
@@ -68,6 +68,7 @@ int main(int argc, char** argv)
         pcord_t* other_particle;
         size_t last_pos = particles->size()-1;
         bool has_collision = false;
+        int particles_before = particles->size(), particles_after = 0;
 
         if (particles->size() > 0){
             for (size_t i = 0; i < last_pos; i++) {
@@ -89,7 +90,9 @@ int main(int argc, char** argv)
                         total_momentum += wall_collide(other_particle,box);
 
                         tmp_particles->push_back(*other_particle);
+                        particles_after++;
                         tmp_particles->push_back(*particle);
+                        particles_after++;
 
                         Utils::pcord_swap(other_particle, &particles->at(last_pos));
                         last_pos--;
@@ -104,28 +107,31 @@ int main(int argc, char** argv)
 
                     if ( !(going_up = Utils::will_pass_edge(particle, my_cords.y0, UP)) && !(going_down = Utils::will_pass_edge(particle, my_cords.y1, DOWN)) ) {
                         feuler(particle, STEP_SIZE);
-                        tmp_particles->push_back(*particle);
                         total_momentum += wall_collide(particle,box);
+                        tmp_particles->push_back(*particle);
+                        particles_after++;
                     }
                     else if ( going_up ){
                         up_transfers->push_back(*particle);
+                        particles_after++;
                     }
                     else{
                         down_transfers->push_back(*particle);
+                        particles_after++;
                     }
                 }
             } // End loop with iterator i
 
             // Check last particle as well. It can not collide with anything.
             particle = &particles->at(last_pos);
-            if (has_collision == false) {
+            if (particles_after < particles_before) {
                 bool going_up;
                 bool going_down;
 
-                if ( !(going_up = Utils::will_pass_edge(particle, my_cords.y0, UP)) && !(going_down = Utils::will_pass_edge(particle, my_cords.y1, DOWN)) ) {
+                if (!(going_up = Utils::will_pass_edge(particle, my_cords.y0, UP)) && !(going_down = Utils::will_pass_edge(particle, my_cords.y1, DOWN)) ) {
                     feuler(particle, STEP_SIZE);
-                    tmp_particles->push_back(*particle);
                     total_momentum += wall_collide(particle,box);
+                    tmp_particles->push_back(*particle);
                 }
                 else if ( going_up ){
                     up_transfers->push_back(*particle);
@@ -134,6 +140,8 @@ int main(int argc, char** argv)
                     down_transfers->push_back(*particle);
                 }
             }
+            cout << "Sum after: " << tmp_particles->size() + up_transfers->size() + down_transfers->size() << ", Sum before: " << particles_before << endl;
+            assert(tmp_particles->size() + up_transfers->size() + down_transfers->size() == particles_before);
 
             particles->clear();
             particles->swap(*tmp_particles);
@@ -265,9 +273,9 @@ int main(int argc, char** argv)
         up_transfers->clear();
         down_transfers->clear();
 
-        // if (my_rank == 0) {
-        //     cout << "Status: " << (t/(float)_SIMULATION_STEPS_)*100.f << "%" << endl;
-        // }
+        if (my_rank == 0) {
+            cout << "Status: " << (t/(float)_SIMULATION_STEPS_)*100.f << "%" << endl;
+        }
     }
 
     // Reduction and calculate pressure.
@@ -276,9 +284,10 @@ int main(int argc, char** argv)
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
         MPI_Reduce(MPI_IN_PLACE, &kin_energy, 1, MPI_DOUBLE, MPI_SUM, 0, com);
-        int Rn = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/(kin_energy);
+        float R = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/kin_energy;
+        cout << "T: " << kin_energy/(n_tasks*INIT_NO_PARTICLES) << endl;
         cout << "Pressure = " << total_momentum << endl;
-        cout << "Rn: " << Rn << endl;
+        cout << "R: " << R << endl;
     }
     else {
         MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
