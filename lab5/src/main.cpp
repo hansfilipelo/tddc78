@@ -49,7 +49,6 @@ int main(int argc, char** argv)
         kin_energy += (pow(particle.vx, 2) + pow(particle.vy,2))/2;
         particles->push_back(particle);
     }
-    cout << "Kin energy: " << kin_energy << endl;
 
     float total_momentum = 0;
     float collision;
@@ -298,7 +297,7 @@ int main(int argc, char** argv)
             cout << "Status: " << (t/(float)_SIMULATION_STEPS_)*100.f << "%" << endl;
         }
 
-        cout << "My rank: " << my_rank << ", particles: " << particles->size() << ", iteration " << t<< endl;
+        //cout << "My rank: " << my_rank << ", particles: " << particles->size() << ", iteration " << t<< endl;
     }
 
     // Reduction and calculate pressure.
