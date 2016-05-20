@@ -112,11 +112,23 @@ int main(int argc, char** argv)
                         particles_after++;
                     }
                     else if ( going_up ){
-                        up_transfers->push_back(*particle);
+                        if(my_rank != 0) {
+                            up_transfers->push_back(*particle);
+                        } else {
+                            feuler(particle, STEP_SIZE);
+                            total_momentum += wall_collide(particle,box);
+                            tmp_particles->push_back(*particle);
+                        }
                         particles_after++;
                     }
                     else{
-                        down_transfers->push_back(*particle);
+                        if(my_rank != n_tasks-1) {
+                            down_transfers->push_back(*particle);
+                        } else {
+                            feuler(particle, STEP_SIZE);
+                            total_momentum += wall_collide(particle,box);
+                            tmp_particles->push_back(*particle);
+                        }
                         particles_after++;
                     }
                 }
@@ -247,6 +259,7 @@ int main(int argc, char** argv)
 
             send_count = up_transfers->size();
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
+
             if(send_count != 0) {
                 MPI_Isend(&up_transfers->at(0), send_count, mpi_particle, my_rank-1, my_rank-1, com, &send_data_request);
             }

@@ -3,7 +3,7 @@ HOSTNAME = $(shell hostname)
 
 CC = mpic++
 EXEC = physics
-CCFLAGS = --std=c++14 -g -D_SIMULATION_STEPS_=10000
+CCFLAGS = --std=c++14 -g -D_SIMULATION_STEPS_=4
 INC =
 LDFLAGS = -lm
 
