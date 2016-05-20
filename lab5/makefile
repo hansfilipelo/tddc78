@@ -1,4 +1,5 @@
 UNAME=$(shell uname -s)
+HOSTNAME = $(shell hostname)
 
 CC = mpic++
 EXEC = physics
@@ -17,7 +18,15 @@ ifeq ($(UNAME), Darwin)
 	LDFLAGS += $(shell mpic++ --showme:link)
 endif
 
-# End Mac specific ------
+# Triolith ------
+
+ifeq ($(HOSTNAME), triolith1)
+	CC = mpiicpc
+	INC += 
+	LDFLAGS += 
+endif
+
+# END triolith
 
 all: $(EXEC)
 
