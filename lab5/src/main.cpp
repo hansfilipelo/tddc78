@@ -140,7 +140,6 @@ int main(int argc, char** argv)
                     down_transfers->push_back(*particle);
                 }
             }
-            cout << "Sum after: " << tmp_particles->size() + up_transfers->size() + down_transfers->size() << ", Sum before: " << particles_before << endl;
             assert(tmp_particles->size() + up_transfers->size() + down_transfers->size() == particles_before);
 
             particles->clear();
@@ -175,9 +174,12 @@ int main(int argc, char** argv)
                 size_t transfer_size;
 
                 last_pos = up_transfers->size() - 1;
+                int particles_before = recv_count + up_transfers->size() + particles->size();
+                int recv_handled = 0;
 
                 for (size_t i = 0; i < recv_count; i++) {
                     particle = &recv_buffer[i];
+                    has_collision = false;
 
                     for (size_t j = 0; j < last_pos+1; j++) {
                         other_particle = &up_transfers->at(j);
@@ -202,9 +204,11 @@ int main(int argc, char** argv)
 
                             if ( particle->y > my_cords.y0 && particle->y < my_cords.y1 ){
                                 particles->push_back(*particle);
+                                recv_handled++;
                             }
                             else{
                                 up_transfers->push_back(*particle);
+                                recv_handled++;
                             }
 
                             has_collision = true;
@@ -216,6 +220,7 @@ int main(int argc, char** argv)
                         feuler(particle, STEP_SIZE);
                         total_momentum += wall_collide(particle,box);
                         particles->push_back(*particle);
+                        recv_handled++;
                     }
                 } // End of loop with iterator i
 
@@ -225,6 +230,9 @@ int main(int argc, char** argv)
                     total_momentum += wall_collide(particle, box);
                 }
 
+                assert(recv_count == recv_handled);
+                int particles_after = up_transfers->size() + particles->size();
+                assert(particles_before == particles_after);
                 // Free the receive buffer
                 free(recv_buffer);
             }
@@ -276,6 +284,8 @@ int main(int argc, char** argv)
         if (my_rank == 0) {
             cout << "Status: " << (t/(float)_SIMULATION_STEPS_)*100.f << "%" << endl;
         }
+
+        cout << "My rank: " << my_rank << ", particles: " << particles->size() << ", iteration " << t<< endl;
     }
 
     // Reduction and calculate pressure.
