@@ -14,6 +14,10 @@ int main(int argc, char** argv)
     int send_count = 0;
     pcord_t* recv_buffer;
 
+    #ifdef COUNT_PARTICLES
+    unsigned particles_counter = 0;
+    #endif
+
     MPI_Comm com = MPI_COMM_WORLD;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(com, &n_tasks);
@@ -160,6 +164,9 @@ int main(int argc, char** argv)
         // Send particles who should change processing element
         if (my_rank != n_tasks-1) {
             send_count = down_transfers->size();
+            #ifdef COUNT_PARTICLES
+            particles_counter += send_count;
+            #endif
 
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank+1, 2*(my_rank+1), com, &send_count_request);
 
@@ -257,6 +264,10 @@ int main(int argc, char** argv)
             }
 
             send_count = up_transfers->size();
+            #ifdef COUNT_PARTICLES
+            particles_counter += send_count;
+            #endif
+
             MPI_Isend(&send_count, 1, MPI_UNSIGNED, my_rank-1, 2*my_rank, com, &send_count_request);
 
             if(send_count != 0) {
@@ -306,6 +317,10 @@ int main(int argc, char** argv)
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
         MPI_Reduce(MPI_IN_PLACE, &kin_energy, 1, MPI_DOUBLE, MPI_SUM, 0, com);
+        #ifdef COUNT_PARTICLES
+        MPI_Reduce(MPI_IN_PLACE, &particles_counter, 1, MPI_INT, MPI_SUM, 0, com);
+        cout << "Average number of communicated particles per time step: " << particles_counter/n_tasks << endl;
+        #endif
         float C = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/kin_energy;
         cout << "T: " << kin_energy/(n_tasks*INIT_NO_PARTICLES) << endl;
         cout << "Pressure = " << total_momentum << endl;
@@ -314,6 +329,9 @@ int main(int argc, char** argv)
     else {
         MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
         MPI_Reduce(&kin_energy, &kin_energy, 1, MPI_DOUBLE, MPI_SUM, 0, com);
+        #ifdef COUNT_PARTICLES
+        MPI_Reduce(&particles_counter, &particles_counter, 1, MPI_INT, MPI_SUM, 0, com);
+        #endif
     }
 
     MPI_Finalize();
