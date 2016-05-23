@@ -306,10 +306,10 @@ int main(int argc, char** argv)
     if(my_rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
         MPI_Reduce(MPI_IN_PLACE, &kin_energy, 1, MPI_DOUBLE, MPI_SUM, 0, com);
-        float R = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/kin_energy;
+        float C = total_momentum*BOX_VERT_SIZE*BOX_HORIZ_SIZE/kin_energy;
         cout << "T: " << kin_energy/(n_tasks*INIT_NO_PARTICLES) << endl;
         cout << "Pressure = " << total_momentum << endl;
-        cout << "R: " << R << endl;
+        cout << "Constant part: " << C << endl;
     }
     else {
         MPI_Reduce(&total_momentum, &total_momentum, 1, MPI_FLOAT, MPI_SUM, 0, com);
